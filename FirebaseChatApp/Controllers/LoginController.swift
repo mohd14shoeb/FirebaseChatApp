@@ -45,7 +45,7 @@ class LoginController: UIViewController, UITextFieldDelegate
     button.layer.cornerRadius = 5
     
     // do some action with this button
-    button.addTarget(self, action: #selector(handleUserRegistration), for: .touchUpInside)
+    button.addTarget(self, action: #selector(handleLoginOrRegistration), for: .touchUpInside)
     
     return button
   }()
@@ -216,42 +216,70 @@ class LoginController: UIViewController, UITextFieldDelegate
   }
   
   
+  
+  
   // MARK: Buttons Actions
   
   
-  @objc func handleUserRegistration()
+  @objc func handleLoginOrRegistration()
+  {
+    if loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0{
+      handleUserLogin()
+    }else{
+      handleUserRegistration()
+    }
+  }
+  
+  func handleUserLogin()
+  {
+    guard let email = emailTextField.text, let password = passwordTextField.text else
+    {
+      print("Form is not valid")
+      return
+    }
+    Auth.auth().signIn(withEmail: email, password: password)
+    {
+      (user, error) in
+      if error != nil{
+        print(error)
+      }else{
+       self.dismiss(animated: true, completion: nil)
+      }
+    }
+  }
+  
+  
+  func handleUserRegistration()
   {
     guard let email = emailTextField.text, let password = passwordTextField.text, let name = nameTextField.text else
     {
       print("Form is not valid")
       return
     }
-    Auth.auth().createUser(withEmail: email, password: password, completion: { (user: AuthDataResult?, error) in
-      
+    
+    Auth.auth().createUser(withEmail: email, password: password, completion:
+    {
+      (user: AuthDataResult?, error) in
       if error != nil {
         print(error)
         return
       }
-      
       guard let uid = Auth.auth().currentUser?.uid else{ return }
       
       // Successufully authenticated user
-      
       let ref = Database.database().reference(fromURL: "https://fir-chattapp-56db4.firebaseio.com/")
       let usersReference = ref.child("users").child(uid)
       let values = ["name": name, "email": email, "password": password]
+      
       usersReference.updateChildValues(values, withCompletionBlock:
-        { (err, ref) in
+      { (err, ref) in
           
           if err != nil {
             print(err)
             return
           }
-          
           self.dismiss(animated: true, completion: nil)
-          print("Saved user successfully in the Firebase DB")
       })
-      
     })
   }
   
@@ -261,7 +289,7 @@ class LoginController: UIViewController, UITextFieldDelegate
     loginOrRegistrationButton.setTitle(title, for: .normal)
     
     // adapt the view height based on the SegmetedControl toggle
-    loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 100 : 150
+    textFieldsContainerViewHeighAnchor?.constant = loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 100 : 150
     // height of nameTextfield based on the SegmetedControl toggle
     nameTextFieldHeighAnchor?.isActive = false
     nameTextFieldHeighAnchor = nameTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 0 : 1/3)
