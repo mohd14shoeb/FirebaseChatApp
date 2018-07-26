@@ -7,9 +7,13 @@
 //
 
 import UIKit
+import Firebase
 
-class LoginController: UIViewController
+class LoginController: UIViewController, UITextFieldDelegate
 {
+  
+  
+  // MARK: Properties
   
   let textFieldsContainerView: UIView =
   {
@@ -32,6 +36,10 @@ class LoginController: UIViewController
     button.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
     button.layer.masksToBounds = true
     button.layer.cornerRadius = 5
+    
+    // do some action with this button
+    button.addTarget(self, action: #selector(handleUserRegistration), for: .touchUpInside)
+    
     return button
   }()
   
@@ -84,11 +92,6 @@ class LoginController: UIViewController
   }()
   
   
-  
-  
-  
-  
-  
   override func viewDidLoad()
   {
     super.viewDidLoad()
@@ -97,11 +100,64 @@ class LoginController: UIViewController
     view.addSubview(loginButtonRegistration)
     view.addSubview(profileImageView)
     
+    nameTextField.delegate = self
+    emailTextField.delegate = self
+    passwordTextField.delegate = self
+    
     setupInputsContainerView()
     setupLoginButtonRegistration()
     setupProfileImageView()
-    
   }
+  
+  // MARK: Buttons Actions
+  
+  
+  @objc func handleUserRegistration()
+  {
+    guard let email = emailTextField.text, let password = passwordTextField.text, let name = nameTextField.text else
+    {
+      print("Form is not valid")
+      return
+    }
+    Auth.auth().createUser(withEmail: email, password: password, completion: { (user: AuthDataResult?, error) in
+      
+      if error != nil {
+        print(error)
+        return
+      }
+      
+      guard let uid = Auth.auth().currentUser?.uid else{ return }
+      
+      // Successufully authenticated user
+      
+      let ref = Database.database().reference(fromURL: "https://fir-chattapp-56db4.firebaseio.com/")
+      let usersReference = ref.child("users").child(uid)
+      let values = ["name": name, "email": email, "password": password]
+      usersReference.updateChildValues(values, withCompletionBlock:
+        { (err, ref) in
+          
+          if err != nil {
+            print(err)
+            return
+          }
+          print("Saved user successfully in the Firebase DB")
+      })
+      
+    })
+  }
+  
+  
+  
+  // MARK: Delegates Functions
+  
+  func textFieldShouldReturn(_ textField: UITextField) -> Bool
+  {
+    textField.resignFirstResponder()
+    return true
+  }
+  
+  
+  // MARK: Setup UI
   
   
   func setupProfileImageView()
@@ -117,10 +173,9 @@ class LoginController: UIViewController
   
   func setupInputsContainerView()
   {
-    // center the input view
+    // fields container center, width and height
     textFieldsContainerView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
     textFieldsContainerView.centerYAnchor.constraint(equalTo: view.centerYAnchor).isActive = true
-    // same thing for the with and the height (12 px on bth sides)
     textFieldsContainerView.widthAnchor.constraint(equalTo: view.widthAnchor, constant: -24).isActive = true
     textFieldsContainerView.heightAnchor.constraint(equalToConstant: 150).isActive = true
     
@@ -130,30 +185,27 @@ class LoginController: UIViewController
     textFieldsContainerView.addSubview(emailSeparatorView)
     textFieldsContainerView.addSubview(passwordTextField)
     
-    // constraints for name text field and its separator
+    // nameTextField constraints + separator
     nameTextField.leftAnchor.constraint(equalTo: textFieldsContainerView.leftAnchor, constant: 12).isActive = true
     nameTextField.topAnchor.constraint(equalTo: textFieldsContainerView.topAnchor).isActive = true
     nameTextField.widthAnchor.constraint(equalTo: textFieldsContainerView.widthAnchor).isActive = true
     nameTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: 1/3).isActive = true
-    
     nameSeparatorView.leftAnchor.constraint(equalTo: textFieldsContainerView.leftAnchor).isActive = true
     nameSeparatorView.topAnchor.constraint(equalTo: nameTextField.bottomAnchor).isActive = true
     nameSeparatorView.widthAnchor.constraint(equalTo: textFieldsContainerView.widthAnchor).isActive = true
     nameSeparatorView.heightAnchor.constraint(equalToConstant: 1).isActive = true
     
-    
-    // constraints for email text field and its separator
+    // emailTextField constraints + separator
     emailTextField.leftAnchor.constraint(equalTo: textFieldsContainerView.leftAnchor, constant: 12).isActive = true
     emailTextField.topAnchor.constraint(equalTo: nameTextField.bottomAnchor).isActive = true
     emailTextField.widthAnchor.constraint(equalTo: textFieldsContainerView.widthAnchor).isActive = true
     emailTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: 1/3).isActive = true
-    
     emailSeparatorView.leftAnchor.constraint(equalTo: textFieldsContainerView.leftAnchor).isActive = true
     emailSeparatorView.topAnchor.constraint(equalTo: emailTextField.bottomAnchor).isActive = true
     emailSeparatorView.widthAnchor.constraint(equalTo: textFieldsContainerView.widthAnchor).isActive = true
     emailSeparatorView.heightAnchor.constraint(equalToConstant: 1).isActive = true
     
-    // constraints for password text field and its separator
+    // passwordTextField constraints
     passwordTextField.leftAnchor.constraint(equalTo: textFieldsContainerView.leftAnchor, constant: 12).isActive = true
     passwordTextField.topAnchor.constraint(equalTo: emailTextField.bottomAnchor).isActive = true
     passwordTextField.widthAnchor.constraint(equalTo: textFieldsContainerView.widthAnchor).isActive = true
@@ -163,17 +215,15 @@ class LoginController: UIViewController
   
   func setupLoginButtonRegistration()
   {
-    //center the button
+    // loginButtonRegistration constraints + width and height
     loginButtonRegistration.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
-    // constraints for width and height and top
     loginButtonRegistration.topAnchor.constraint(equalTo: textFieldsContainerView.bottomAnchor, constant: 12).isActive = true
     loginButtonRegistration.widthAnchor.constraint(equalTo: textFieldsContainerView.widthAnchor).isActive = true
     loginButtonRegistration.heightAnchor.constraint(equalToConstant: 50).isActive = true
-    
   }
   
   
-  
+  // MARK: Other functions
   
   
   override var preferredStatusBarStyle: UIStatusBarStyle
@@ -184,6 +234,11 @@ class LoginController: UIViewController
   
   
 }
+
+
+
+
+// Extension to make easier to setup color
 
 extension UIColor
 {

@@ -7,15 +7,16 @@
 //
 
 import UIKit
+import Firebase
 
 class ViewController: UITableViewController {
 
-  override func viewDidLoad() {
+  override func viewDidLoad()
+  {
     super.viewDidLoad()
-    
+
     //Adding button to the top
     navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self, action: #selector(handleLogout))
-    
   }
   
   
@@ -24,10 +25,7 @@ class ViewController: UITableViewController {
     //launch Login controller
     let loginController = LoginController()
     present(loginController, animated: true, completion: nil)
-    
   }
-
-  
 
 }
 

@@ -10,7 +10,6 @@ DerivedData/
 
 ## Various settings
 *.pbxuser
-*.userstate
 !default.pbxuser
 *.mode1v3
 !default.mode1v3
@@ -73,8 +72,29 @@ fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
 
-# ====== MY FOLDERS
 
-OtherThings/
-backups/
-Todos.md
+
+# ======  Other Files
+
+  # Firebase 	
+  	GoogleService-Info.plist
+  
+  # CocoaPods
+	Podfile.lock
+	Pods/   		 
+
+  # General
+	OtherThings/
+	backups/
+	*.md
+	*.userstate
+	Todos.md
+
+
+
+
+
+
+
+
+
