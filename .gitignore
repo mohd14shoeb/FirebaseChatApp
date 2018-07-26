@@ -1,4 +1,31 @@
 
+# ======  Other Files
+
+###### Firebase    
+
+GoogleService-Info.plist
+  
+####### CocoaPods
+
+Podfile.lock
+Pods/
+
+###### Xcode 9.4
+    
+*.userstate
+
+
+###### General
+
+*.md
+todos.md
+backups/
+    
+
+
+
+
+
 
 # Xcode
 #
@@ -73,22 +100,6 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 
-
-# ======  Other Files
-
-  # Firebase 	
-  	GoogleService-Info.plist
-  
-  # CocoaPods
-	Podfile.lock
-	Pods/   		 
-
-  # General
-	OtherThings/
-	backups/
-	*.md
-	*.userstate
-	Todos.md
 
 
 
