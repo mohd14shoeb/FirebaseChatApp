@@ -11,8 +11,10 @@
 		567BBAA21D09AB28376A1427 /* Pods_FirebaseChatAppUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7157CB4488F499FD362BDE29 /* Pods_FirebaseChatAppUITests.framework */; };
 		6C80AE20481ECCA2D70FC0CA /* Pods_FirebaseChatApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E717E52B7768EB43D29526E6 /* Pods_FirebaseChatApp.framework */; };
 		7E709B452109C5C8007A9C11 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 7E709B442109C5C6007A9C11 /* GoogleService-Info.plist */; };
+		7E709B492109FEB6007A9C11 /* RecentMessagesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E709B482109FEB6007A9C11 /* RecentMessagesController.swift */; };
+		7E709B4C210A46CE007A9C11 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E709B4B210A46CE007A9C11 /* User.swift */; };
 		7EE8ED2021064B67004EE737 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE8ED1F21064B67004EE737 /* AppDelegate.swift */; };
-		7EE8ED2221064B67004EE737 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE8ED2121064B67004EE737 /* ViewController.swift */; };
+		7EE8ED2221064B67004EE737 /* MessagesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EE8ED2121064B67004EE737 /* MessagesViewController.swift */; };
 		7EE8ED2521064B67004EE737 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7EE8ED2321064B67004EE737 /* Main.storyboard */; };
 		7EE8ED2721064B73004EE737 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7EE8ED2621064B73004EE737 /* Assets.xcassets */; };
 		7EE8ED2A21064B73004EE737 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7EE8ED2821064B73004EE737 /* LaunchScreen.storyboard */; };
@@ -43,9 +45,11 @@
 		7157CB4488F499FD362BDE29 /* Pods_FirebaseChatAppUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_FirebaseChatAppUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		734EFEA49DE153DC208CAA34 /* Pods-FirebaseChatAppTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FirebaseChatAppTests.debug.xcconfig"; path = "Pods/Target Support Files/Pods-FirebaseChatAppTests/Pods-FirebaseChatAppTests.debug.xcconfig"; sourceTree = "<group>"; };
 		7E709B442109C5C6007A9C11 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		7E709B482109FEB6007A9C11 /* RecentMessagesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecentMessagesController.swift; sourceTree = "<group>"; };
+		7E709B4B210A46CE007A9C11 /* User.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
 		7EE8ED1C21064B67004EE737 /* FirebaseChatApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FirebaseChatApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7EE8ED1F21064B67004EE737 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		7EE8ED2121064B67004EE737 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		7EE8ED2121064B67004EE737 /* MessagesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesViewController.swift; sourceTree = "<group>"; };
 		7EE8ED2421064B67004EE737 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		7EE8ED2621064B73004EE737 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7EE8ED2921064B73004EE737 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
@@ -93,9 +97,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7E709B4A210A46A6007A9C11 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				7E709B4B210A46CE007A9C11 /* User.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
 		7EE8ED1321064B66004EE737 = {
 			isa = PBXGroup;
 			children = (
+				7E709B4A210A46A6007A9C11 /* Model */,
 				7EE8ED4D21064E37004EE737 /* Controllers */,
 				7EE8ED1E21064B67004EE737 /* FirebaseChatApp */,
 				7EE8ED3321064B73004EE737 /* FirebaseChatAppTests */,
@@ -150,8 +163,9 @@
 		7EE8ED4D21064E37004EE737 /* Controllers */ = {
 			isa = PBXGroup;
 			children = (
-				7EE8ED2121064B67004EE737 /* ViewController.swift */,
+				7EE8ED2121064B67004EE737 /* MessagesViewController.swift */,
 				7EE8ED4E21064E69004EE737 /* LoginController.swift */,
+				7E709B482109FEB6007A9C11 /* RecentMessagesController.swift */,
 			);
 			path = Controllers;
 			sourceTree = "<group>";
@@ -394,8 +408,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7EE8ED2221064B67004EE737 /* ViewController.swift in Sources */,
+				7EE8ED2221064B67004EE737 /* MessagesViewController.swift in Sources */,
 				7EE8ED4F21064E69004EE737 /* LoginController.swift in Sources */,
+				7E709B492109FEB6007A9C11 /* RecentMessagesController.swift in Sources */,
+				7E709B4C210A46CE007A9C11 /* User.swift in Sources */,
 				7EE8ED2021064B67004EE737 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
