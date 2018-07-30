@@ -9,13 +9,17 @@
 import UIKit
 import Firebase
 
+
+
 class LoginController: UIViewController, UITextFieldDelegate
 {
   
   
   // MARK: Properties
+  var messagesController: MessagesViewController?
   
-    // these are used to dinamically adapt the view when selecting segmentedControll toggle
+  
+  // these are used to dinamically adapt the view when selecting segmentedControll toggle
   var textFieldsContainerViewHeighAnchor: NSLayoutConstraint?
   var nameTextFieldHeighAnchor: NSLayoutConstraint?
   var emailTextFieldHeighAnchor: NSLayoutConstraint?
@@ -89,14 +93,23 @@ class LoginController: UIViewController, UITextFieldDelegate
     return field
   }()
   
-  
-  let profileImageView: UIImageView = {
-    let imageView = UIImageView()
-    imageView.image = UIImage(named: "logo")
-    imageView.translatesAutoresizingMaskIntoConstraints = false
-    imageView.contentMode = .scaleAspectFill
-    return imageView
+  // important lazy var here allow the target to be saved for the UITapGestureRecognizer
+  lazy var profileImageView: UIImageView =
+    {
+      let imageView = UIImageView()
+      imageView.image = UIImage(named: "default_image_profile")
+      imageView.layer.cornerRadius = 4
+      imageView.clipsToBounds = true
+      imageView.translatesAutoresizingMaskIntoConstraints = false
+      imageView.contentMode = .scaleAspectFill
+      imageView.isUserInteractionEnabled = true
+      imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleImagePicker)))
+      return imageView
   }()
+  
+  
+  
+  
   
   
   let loginOrRegistrationSegmentedControl: UISegmentedControl =
@@ -118,6 +131,7 @@ class LoginController: UIViewController, UITextFieldDelegate
   {
     super.viewDidLoad()
     view.backgroundColor = UIColor(r: 129, g: 147, b: 166)
+    view.bounds = view.frame.insetBy(dx: 0, dy: -50)
     view.addSubview(textFieldsContainerView)
     view.addSubview(loginOrRegistrationButton)
     view.addSubview(profileImageView)
@@ -127,10 +141,11 @@ class LoginController: UIViewController, UITextFieldDelegate
     emailTextField.delegate = self
     passwordTextField.delegate = self
     
-    setupTextFieldsContainerView()
-    setupLoginOrRegistrationButton()
     setupProfileImageView()
     setupLoginOrRegistrationSegemntedControl()
+    setupTextFieldsContainerView()
+    setupLoginOrRegistrationButton()
+    
   }
   
   
@@ -202,7 +217,7 @@ class LoginController: UIViewController, UITextFieldDelegate
     passwordTextField.topAnchor.constraint(equalTo: emailTextField.bottomAnchor).isActive = true
     passwordTextField.widthAnchor.constraint(equalTo: textFieldsContainerView.widthAnchor).isActive = true
     passwordTextFieldHeighAnchor = passwordTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: 1/3)
-      passwordTextFieldHeighAnchor?.isActive = true
+    passwordTextFieldHeighAnchor?.isActive = true
     
   }
   
@@ -219,6 +234,8 @@ class LoginController: UIViewController, UITextFieldDelegate
   
   
   // MARK: Buttons Actions
+  
+  
   
   
   @objc func handleLoginOrRegistration()
@@ -242,46 +259,15 @@ class LoginController: UIViewController, UITextFieldDelegate
       (user, error) in
       if error != nil{
         print(error)
-      }else{
-       self.dismiss(animated: true, completion: nil)
-      }
-    }
-  }
-  
-  
-  func handleUserRegistration()
-  {
-    guard let email = emailTextField.text, let password = passwordTextField.text, let name = nameTextField.text else
-    {
-      print("Form is not valid")
-      return
-    }
-    
-    Auth.auth().createUser(withEmail: email, password: password, completion:
-    {
-      (user: AuthDataResult?, error) in
-      if error != nil {
-        print(error)
         return
       }
-      guard let uid = Auth.auth().currentUser?.uid else{ return }
-      
-      // Successufully authenticated user
-      let ref = Database.database().reference(fromURL: "https://fir-chattapp-56db4.firebaseio.com/")
-      let usersReference = ref.child("users").child(uid)
-      let values = ["name": name, "email": email, "password": password]
-      
-      usersReference.updateChildValues(values, withCompletionBlock:
-      { (err, ref) in
-          
-          if err != nil {
-            print(err)
-            return
-          }
-          self.dismiss(animated: true, completion: nil)
-      })
-    })
+      self.messagesController?.updateUserNavBarTitle()
+      self.dismiss(animated: true, completion: nil)
+    }
   }
+  
+  
+  
   
   @objc func handleLoginRegistrationChangeTabs()
   {
