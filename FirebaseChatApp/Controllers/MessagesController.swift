@@ -9,8 +9,10 @@
 import UIKit
 import Firebase
 
-class MessagesViewController: UITableViewController
+class MessagesController: UITableViewController
 {
+  
+  var messages = [Message]()
   
   
   lazy var tapChatControllerGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(showChatController))
@@ -56,9 +58,49 @@ class MessagesViewController: UITableViewController
     let writeImageIcon = UIImage(named: "recent_message_icon")
     navigationItem.rightBarButtonItem = UIBarButtonItem(image: writeImageIcon, style: .plain, target: self, action: #selector(handleRecentMessages))
     
+    observerMessages()
     
     checkIfUserIsLoggedIn()
   }
+  
+  func observerMessages()
+  {
+    let ref = Database.database().reference().child("messages")
+    ref.observe(.childAdded, with:
+    {
+      (snapshot) in
+      if let dictionary = snapshot.value as? [String : AnyObject]
+      {
+        let message = Message()
+//        message.setValuesForKeys(dictionary)
+        message.senderUserId = dictionary["senderUserId"] as? String
+        message.receiverUserId = dictionary["receiverUserId"] as? String
+        message.text = dictionary["text"] as? String
+        message.timeStamp = dictionary["timeStamp"] as? String
+        self.messages.append(message)
+        DispatchQueue.main.async{
+          self.tableView.reloadData()
+        }
+      }
+    }, withCancel: nil)
+  }
+  
+  
+  override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int
+  {
+    return messages.count
+  }
+  
+  override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
+  {
+    let cell = UITableViewCell(style: UITableViewCellStyle.subtitle, reuseIdentifier: "celliD")
+    let message = messages[indexPath.row]
+    cell.textLabel?.text = message.receiverUserId
+    cell.detailTextLabel?.text = message.text
+    return cell 
+  }
+  
+  
   
   func checkIfUserIsLoggedIn()
   {
@@ -87,11 +129,8 @@ class MessagesViewController: UITableViewController
   
   func setupNavBarWithUser(_ user: User)
   {
-    
     let titleView = UIView()
-    titleView.backgroundColor = UIColor.red
     titleView.frame = CGRect(x: 0, y: 0, width: 100, height: 40)
-    
     
     self.navigationItem.titleView = titleView
 
@@ -127,24 +166,21 @@ class MessagesViewController: UITableViewController
     containerView.centerXAnchor.constraint(equalTo: titleView.centerXAnchor).isActive = true
     containerView.centerYAnchor.constraint(equalTo: titleView.centerYAnchor).isActive = true
 
-    titleView.isUserInteractionEnabled = true
-    titleView.addGestureRecognizer(tapChatControllerGestureRecognizer)
+    //dont need this anymore
+//    titleView.isUserInteractionEnabled = true
+//    titleView.addGestureRecognizer(tapChatControllerGestureRecognizer)
   }
   
-  @objc func showChatController(sender: UITapGestureRecognizer)
+  @objc func showChatController(_ forUser: User)
   {
-    print("123")
-    if sender.state == .possible {
-      print("possible state")
-    }
     let layout = UICollectionViewFlowLayout()
     layout.scrollDirection = .vertical
     let chatController = ChatController(collectionViewLayout: layout)
+    chatController.user = forUser
     navigationController?.pushViewController(chatController, animated: true)
   }
   
   
-
   @objc func handleLogout()
   {
     do{
@@ -161,6 +197,7 @@ class MessagesViewController: UITableViewController
   @objc func handleRecentMessages()
   {
     let recentMessagesController = RecentMessagesController()
+    recentMessagesController.messagesController = self
     let navigationController = UINavigationController(rootViewController: recentMessagesController)
     present(navigationController, animated: true, completion: nil)
   }

@@ -12,11 +12,19 @@ import Firebase
 class ChatController: UICollectionViewController, UITextFieldDelegate
 {
   
-  let sendMessageTextField: UITextField =
+  var user: User? {
+    didSet{
+      navigationItem.title = user?.name
+    }
+  }
+  
+  
+  lazy var sendMessageTextField: UITextField =
   {
     let textField = UITextField()
     textField.placeholder = "Enter message..."
     textField.translatesAutoresizingMaskIntoConstraints = false
+    textField.delegate = self
     return textField
   }()
   
@@ -24,11 +32,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate
   override func viewDidLoad()
   {
     super.viewDidLoad()
-    navigationItem.title = "Chat Controller"
-    collectionView?.backgroundColor = UIColor(displayP3Red: 193, green: 66, blue: 66, alpha: 0.9)
-    
-    sendMessageTextField.delegate = self
-    
+    collectionView?.backgroundColor = UIColor(r: 240, g: 240, b: 240)
     setupInputComponent()
   }
   
@@ -36,6 +40,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate
   {
     let containerView = UIView()
     view.addSubview(containerView)
+    
     
     containerView.translatesAutoresizingMaskIntoConstraints = false
     containerView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
@@ -73,6 +78,8 @@ class ChatController: UICollectionViewController, UITextFieldDelegate
     ContainerViewSeparatorLine.bottomAnchor.constraint(equalTo: containerView.topAnchor).isActive = true
     ContainerViewSeparatorLine.widthAnchor.constraint(equalTo: containerView.widthAnchor).isActive = true
     
+
+    
   }
   
   func textFieldShouldReturn(_ textField: UITextField) -> Bool
@@ -83,7 +90,17 @@ class ChatController: UICollectionViewController, UITextFieldDelegate
   
   @objc func handleSendMessage()
   {
-    
+    let ref = Database.database().reference().child("messages")
+    // to represent a list of message, we generate a unique node
+    // user selected by the current logged user, to send a message
+    let receiverUserId = user?.id
+    // curren logged user
+    let senderUserId = Auth.auth().currentUser?.uid
+    let messageTimeStamp = String(NSDate().timeIntervalSinceNow)
+    let message = ["senderUserId": senderUserId!, "receiverUserId":
+      receiverUserId,"text": sendMessageTextField.text!, "timeStamp" : messageTimeStamp] as! [String : String]
+    //send message adding every time a new one without replacing that already sent
+    ref.childByAutoId().updateChildValues(message)
   }
   
   

@@ -10,6 +10,7 @@ import UIKit
 
 class User: NSObject
 {
+  var id: String? // id used to associate messages wrote by the corresponding user
   var name: String?
   var email: String?
   var profileImageUrl: String?

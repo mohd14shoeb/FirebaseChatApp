@@ -13,6 +13,8 @@ class RecentMessagesController: UITableViewController
 {
   
   
+  
+  var messagesController: MessagesController?
   let cellId = "cellId"
   var users = [User]()
   
@@ -29,6 +31,8 @@ class RecentMessagesController: UITableViewController
   }
   
   
+  
+  
   func fetchUserInfo()
   {
     Database.database().reference().child("users").observe(.childAdded, with:
@@ -37,6 +41,7 @@ class RecentMessagesController: UITableViewController
       if let dictionary = snapshot.value as? [String: String]
       {
         let user = User(dictionary: dictionary)
+        user.id = snapshot.key
         // properties of User class must match with this setter otherwise it crashes. Safer way is to to assign value from database like user.name = ....
         //user.setValuesForKeys(dictionary)
 //        user.name = dictionary["name"] as? String
@@ -87,6 +92,14 @@ class RecentMessagesController: UITableViewController
   override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
   {
     return 80
+  }
+  
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    dismiss(animated: true)
+  {
+      let user = self.users[indexPath.row]
+      self.messagesController?.showChatController(user)
+    }
   }
   
   

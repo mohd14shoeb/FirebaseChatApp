@@ -16,7 +16,7 @@ class LoginController: UIViewController, UITextFieldDelegate
   
   
   // MARK: Properties
-  var messagesController: MessagesViewController?
+  var messagesController: MessagesController?
   
   
   // these are used to dinamically adapt the view when selecting segmentedControll toggle
@@ -97,7 +97,7 @@ class LoginController: UIViewController, UITextFieldDelegate
   lazy var profileImageView: UIImageView =
     {
       let imageView = UIImageView()
-      imageView.image = UIImage(named: "default_image_profile")
+      imageView.image = UIImage(named: "logo")
       imageView.layer.cornerRadius = 4
       imageView.clipsToBounds = true
       imageView.translatesAutoresizingMaskIntoConstraints = false
