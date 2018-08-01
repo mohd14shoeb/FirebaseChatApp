@@ -13,6 +13,7 @@ class MessagesController: UITableViewController
 {
   
   var messages = [Message]()
+  var messagesGroupedById = [String:Message]()
   let cellId = "cellId"
   
   
@@ -80,7 +81,20 @@ class MessagesController: UITableViewController
         message.receiverUserId = dictionary["receiverUserId"] as? String
         message.text = dictionary["text"] as? String
         message.timeStamp = dictionary["timeStamp"] as? NSNumber
-        self.messages.append(message)
+        
+        // grouping message by user Id
+//          self.messages.append(message)
+        if let receiverUserId = message.receiverUserId
+        {
+          self.messagesGroupedById[receiverUserId] = message
+          // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
+          self.messages = Array(self.messagesGroupedById.values)
+          self.messages.sort(by:
+          {
+            (msg1, msg2) -> Bool in
+            return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
+          })
+        }
         DispatchQueue.main.async{
           self.tableView.reloadData()
         }
@@ -128,8 +142,8 @@ class MessagesController: UITableViewController
     //observing a single user through fetching
     guard let uid = Auth.auth().currentUser?.uid else { return }
     Database.database().reference().child("users").child(uid).observeSingleEvent(of: .value, with:
-      { (snapshot) in
-        
+      {
+        (snapshot) in
         if let dictionary = snapshot.value as? [String: AnyObject] {
           let user = User(dictionary: dictionary)
           self.setupNavBarWithUser(user)
