@@ -75,7 +75,7 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
   
   private func saveUserCredentialsWithUID(uid: String, values: [String: String])
   {
-    let ref = Database.database().reference(fromURL: "https://fir-chattapp-56db4.firebaseio.com/")
+    let ref = Database.database().reference()
     let usersReference = ref.child("users").child(uid)
     
     usersReference.updateChildValues(values, withCompletionBlock:

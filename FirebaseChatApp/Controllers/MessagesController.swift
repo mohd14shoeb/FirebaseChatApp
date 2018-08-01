@@ -13,6 +13,7 @@ class MessagesController: UITableViewController
 {
   
   var messages = [Message]()
+  let cellId = "cellId"
   
   
   lazy var tapChatControllerGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(showChatController))
@@ -60,6 +61,8 @@ class MessagesController: UITableViewController
     
     observerMessages()
     
+    tableView.register(UserCell.self, forCellReuseIdentifier: "cellId")
+    
     checkIfUserIsLoggedIn()
   }
   
@@ -76,7 +79,7 @@ class MessagesController: UITableViewController
         message.senderUserId = dictionary["senderUserId"] as? String
         message.receiverUserId = dictionary["receiverUserId"] as? String
         message.text = dictionary["text"] as? String
-        message.timeStamp = dictionary["timeStamp"] as? String
+        message.timeStamp = dictionary["timeStamp"] as? NSNumber
         self.messages.append(message)
         DispatchQueue.main.async{
           self.tableView.reloadData()
@@ -93,11 +96,20 @@ class MessagesController: UITableViewController
   
   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
   {
-    let cell = UITableViewCell(style: UITableViewCellStyle.subtitle, reuseIdentifier: "celliD")
+    //cell hack for fast test the content of the tableView
+    //let cell = UITableViewCell(style: UITableViewCellStyle.subtitle, reuseIdentifier: "celliD")
+    let cell = tableView.dequeueReusableCell(withIdentifier: cellId, for: indexPath) as! UserCell
+    
     let message = messages[indexPath.row]
-    cell.textLabel?.text = message.receiverUserId
-    cell.detailTextLabel?.text = message.text
+    cell.message = message
     return cell 
+  }
+  
+  
+  //change the heigh of the table view rows
+  override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
+  {
+    return 80
   }
   
   
@@ -118,7 +130,7 @@ class MessagesController: UITableViewController
     Database.database().reference().child("users").child(uid).observeSingleEvent(of: .value, with:
       { (snapshot) in
         
-        if let dictionary = snapshot.value as? [String: String] {
+        if let dictionary = snapshot.value as? [String: AnyObject] {
           let user = User(dictionary: dictionary)
           self.setupNavBarWithUser(user)
           //self.navigationItem.title = dictionary["name"] as? String

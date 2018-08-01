@@ -96,9 +96,9 @@ class ChatController: UICollectionViewController, UITextFieldDelegate
     let receiverUserId = user?.id
     // curren logged user
     let senderUserId = Auth.auth().currentUser?.uid
-    let messageTimeStamp = String(NSDate().timeIntervalSinceNow)
+    let messageTimeStamp = Date().timeIntervalSince1970
     let message = ["senderUserId": senderUserId!, "receiverUserId":
-      receiverUserId,"text": sendMessageTextField.text!, "timeStamp" : messageTimeStamp] as! [String : String]
+    receiverUserId, "text": sendMessageTextField.text, "timeStamp" : messageTimeStamp] as [String : AnyObject]
     //send message adding every time a new one without replacing that already sent
     ref.childByAutoId().updateChildValues(message)
   }

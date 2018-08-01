@@ -15,7 +15,7 @@ class User: NSObject
   var email: String?
   var profileImageUrl: String?
   
-  init(dictionary: [String: String])
+  init(dictionary: [String: AnyObject])
   {
     self.name = dictionary["name"] as? String ?? ""
     self.email = dictionary["email"] as? String ?? ""
