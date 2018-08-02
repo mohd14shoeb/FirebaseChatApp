@@ -20,23 +20,8 @@ class UserCell: UITableViewCell
   {
     didSet
     {
-      if let senderUserId = message?.senderUserId
-      {
-        // get the reference of the user that has received the message
-        let ref = Database.database().reference().child("users").child(senderUserId)
-        ref.observe(.value, with:
-          {
-            (snapshot) in
-            if let dictionary = snapshot.value as? [String : AnyObject]
-            {
-              self.textLabel?.text = dictionary["name"] as? String
-              if let profileImageUrl = dictionary["profileImageUrl"] as? String
-              {
-                self.customProfileImageView.loadImageUsingCache(with: profileImageUrl)
-              }
-            }
-        }, withCancel: nil)
-      }
+      setupNameAndProfileImage()
+
       detailTextLabel?.text = message?.text
       
       if let seconds = message?.timeStamp?.doubleValue
@@ -46,6 +31,38 @@ class UserCell: UITableViewCell
         dateFormatted.dateFormat = "hh:mm:ss a"
         messageTimeLabel.text = dateFormatted.string(from: timeStampDate)
       }
+    }
+  }
+  
+  private func setupNameAndProfileImage()
+  {
+    let correctUserId: String?
+    
+    // if the current user is the one who received the message we display the user who sent him that message, otherwise we do the opposite.
+    if message?.receiverUserId == Auth.auth().currentUser?.uid
+    {
+      correctUserId = message?.senderUserId
+    }else{
+      correctUserId = message?.receiverUserId
+    }
+    
+    
+    if let id = correctUserId
+    {
+      // get the reference of the user of which the current user have sent a message and we observe any tipe of value change on this receiverUserId ref
+      let ref = Database.database().reference().child("users").child(id)
+      ref.observe(.value, with:
+        {
+          (snapshot) in
+          if let dictionary = snapshot.value as? [String : AnyObject]
+          {
+            self.textLabel?.text = dictionary["name"] as? String
+            if let profileImageUrl = dictionary["profileImageUrl"] as? String
+            {
+              self.customProfileImageView.loadImageUsingCache(with: profileImageUrl)
+            }
+          }
+      }, withCancel: nil)
     }
   }
   
@@ -75,7 +92,6 @@ class UserCell: UITableViewCell
   let messageTimeLabel: UILabel =
   {
     let label = UILabel()
-    label.text = "HH:MM:SS"
     label.font = UIFont.systemFont(ofSize: 13)
     label.textColor = UIColor.darkGray
     label.translatesAutoresizingMaskIntoConstraints = false

@@ -97,7 +97,7 @@ class LoginController: UIViewController, UITextFieldDelegate
   lazy var profileImageView: UIImageView =
     {
       let imageView = UIImageView()
-      imageView.image = UIImage(named: "logo")
+      imageView.image = UIImage(named: "default_profileImage")
       imageView.layer.cornerRadius = 4
       imageView.clipsToBounds = true
       imageView.translatesAutoresizingMaskIntoConstraints = false

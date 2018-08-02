@@ -13,7 +13,7 @@ class MessagesController: UITableViewController
 {
   
   var messages = [Message]()
-  var messagesGroupedById = [String:Message]()
+  var messagesGroupedByUserId = [String:Message]()
   let cellId = "cellId"
   
   
@@ -60,13 +60,66 @@ class MessagesController: UITableViewController
     let writeImageIcon = UIImage(named: "recent_message_icon")
     navigationItem.rightBarButtonItem = UIBarButtonItem(image: writeImageIcon, style: .plain, target: self, action: #selector(handleRecentMessages))
     
-    observerMessages()
+//    observerMessages()
+    
+    
     
     tableView.register(UserCell.self, forCellReuseIdentifier: "cellId")
     
     checkIfUserIsLoggedIn()
   }
   
+  
+  
+  func observeUserMessages()
+  {
+    guard let uid = Auth.auth().currentUser?.uid else {
+      return
+    }
+    //get the reference only of the messages that the current user has sent
+    let ref = Database.database().reference().child("messagesGroudpedById").child(uid)
+    ref.observe(.childAdded, with:
+    {
+      (snapshot) in
+      let messageId = snapshot.key
+      let messageRef = Database.database().reference().child("messages").child(messageId)
+      messageRef.observeSingleEvent(of: .value, with:
+      {
+        (snapshot) in
+        if let dictionary = snapshot.value as? [String : AnyObject]
+        {
+          let message = Message()
+          //        message.setValuesForKeys(dictionary)
+          message.senderUserId = dictionary["senderUserId"] as? String
+          message.receiverUserId = dictionary["receiverUserId"] as? String
+          message.text = dictionary["text"] as? String
+          message.timeStamp = dictionary["timeStamp"] as? NSNumber
+          
+          // grouping message by user Id
+          //          self.messages.append(message)
+          if let receiverUserId = message.receiverUserId
+          {
+            self.messagesGroupedByUserId[receiverUserId] = message
+            // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
+            self.messages = Array(self.messagesGroupedByUserId.values)
+            self.messages.sort(by:
+              {
+                (msg1, msg2) -> Bool in
+                return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
+            })
+          }
+          DispatchQueue.main.async{
+            self.tableView.reloadData()
+          }
+        }
+        
+        
+        
+      }, withCancel: nil)
+    }, withCancel: nil )
+  }
+  
+  //function to Observe all the sent/received message
   func observerMessages()
   {
     let ref = Database.database().reference().child("messages")
@@ -86,9 +139,9 @@ class MessagesController: UITableViewController
 //          self.messages.append(message)
         if let receiverUserId = message.receiverUserId
         {
-          self.messagesGroupedById[receiverUserId] = message
+          self.messagesGroupedByUserId[receiverUserId] = message
           // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
-          self.messages = Array(self.messagesGroupedById.values)
+          self.messages = Array(self.messagesGroupedByUserId.values)
           self.messages.sort(by:
           {
             (msg1, msg2) -> Bool in
@@ -108,12 +161,13 @@ class MessagesController: UITableViewController
     return messages.count
   }
   
+  
+  // this method is called for every cell
   override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell
   {
     //cell hack for fast test the content of the tableView
     //let cell = UITableViewCell(style: UITableViewCellStyle.subtitle, reuseIdentifier: "celliD")
     let cell = tableView.dequeueReusableCell(withIdentifier: cellId, for: indexPath) as! UserCell
-    
     let message = messages[indexPath.row]
     cell.message = message
     return cell 
@@ -155,6 +209,13 @@ class MessagesController: UITableViewController
   
   func setupNavBarWithUser(_ user: User)
   {
+    // clear the messags to display the updated ones
+    messages.removeAll()
+    messagesGroupedByUserId.removeAll()
+    tableView.reloadData()
+    
+    observeUserMessages()
+    
     let titleView = UIView()
     titleView.frame = CGRect(x: 0, y: 0, width: 100, height: 40)
     
