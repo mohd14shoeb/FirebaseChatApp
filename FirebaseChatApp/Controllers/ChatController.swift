@@ -9,14 +9,20 @@
 import UIKit
 import Firebase
 
-class ChatController: UICollectionViewController, UITextFieldDelegate
+class ChatController: UICollectionViewController, UITextFieldDelegate, UICollectionViewDelegateFlowLayout
 {
+  
+  let cellId = "cellId"
   
   var user: User? {
     didSet{
       navigationItem.title = user?.name
+      observeMessages()
     }
   }
+  
+  
+  var messages = [Message]()
   
   
   lazy var sendMessageTextField: UITextField =
@@ -29,18 +35,75 @@ class ChatController: UICollectionViewController, UITextFieldDelegate
   }()
   
   
+  
+  
   override func viewDidLoad()
   {
     super.viewDidLoad()
     collectionView?.backgroundColor = UIColor(r: 240, g: 240, b: 240)
+    collectionView?.alwaysBounceVertical = true
+    //registering the cell
+    collectionView?.register(ChatCellMessage.self, forCellWithReuseIdentifier: cellId)
     setupInputComponent()
   }
+  
+  func observeMessages()
+  {
+    guard let loggedUserId = Auth.auth().currentUser?.uid else { return }
+    let userMessages = Database.database().reference().child("messagesGroudpedById").child(loggedUserId)
+    userMessages.observe(.childAdded, with:
+    {
+      (snapshot) in
+      guard let messageId = snapshot.key as? String else { return }
+      let messagesRef = Database.database().reference().child("messages").child(messageId)
+      
+      messagesRef.observeSingleEvent(of: .value, with:
+      { (snapshot) in
+        
+        guard let dictionary = snapshot.value as? [String : AnyObject] else { return }
+        let message = Message(dictionary: dictionary)
+        if self.user?.id! == message.receiverUserId!
+        {
+          self.messages.append(message)
+          DispatchQueue.main.async{
+              self.collectionView?.reloadData()
+          }
+        }
+        
+      }, withCancel: nil)
+    }, withCancel: nil)
+  }
+  
+  
+  override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int
+  {
+    return messages.count
+  }
+  
+  override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell
+  {
+    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellId, for: indexPath) as! ChatCellMessage
+    cell.textView.text = messages[indexPath.row].text!
+    return cell
+  }
+  
+  
+  // this method id from UICollectionViewDelegateFlowLayout
+  
+  func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
+  {
+    return CGSize(width: view.frame.width, height: 80)
+  }
+  
+  
   
   func setupInputComponent()
   {
     let containerView = UIView()
     view.addSubview(containerView)
     
+    //this background trick avoid the collectionView background to overlap the containerView background
+    containerView.backgroundColor = .white
     
     containerView.translatesAutoresizingMaskIntoConstraints = false
     containerView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true

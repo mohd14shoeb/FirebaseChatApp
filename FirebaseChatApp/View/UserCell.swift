@@ -36,18 +36,8 @@ class UserCell: UITableViewCell
   
   private func setupNameAndProfileImage()
   {
-    let correctUserId: String?
-    
-    // if the current user is the one who received the message we display the user who sent him that message, otherwise we do the opposite.
-    if message?.receiverUserId == Auth.auth().currentUser?.uid
-    {
-      correctUserId = message?.senderUserId
-    }else{
-      correctUserId = message?.receiverUserId
-    }
-    
-    
-    if let id = correctUserId
+    // if the current user is the one who received the message we display the user who sent him that message, otherwise we do the opposite
+    if let id = message?.retrieveOtherUserIdInTheMessage()
     {
       // get the reference of the user of which the current user have sent a message and we observe any tipe of value change on this receiverUserId ref
       let ref = Database.database().reference().child("users").child(id)

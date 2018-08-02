@@ -12,8 +12,6 @@ import Firebase
 class RecentMessagesController: UITableViewController
 {
   
-  
-  
   var messagesController: MessagesController?
   let cellId = "cellId"
   var users = [User]()

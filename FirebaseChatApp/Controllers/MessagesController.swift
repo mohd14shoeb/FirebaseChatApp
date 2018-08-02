@@ -88,12 +88,12 @@ class MessagesController: UITableViewController
         (snapshot) in
         if let dictionary = snapshot.value as? [String : AnyObject]
         {
-          let message = Message()
+          let message = Message(dictionary: dictionary)
           //        message.setValuesForKeys(dictionary)
-          message.senderUserId = dictionary["senderUserId"] as? String
-          message.receiverUserId = dictionary["receiverUserId"] as? String
-          message.text = dictionary["text"] as? String
-          message.timeStamp = dictionary["timeStamp"] as? NSNumber
+//          message.senderUserId = dictionary["senderUserId"] as? String
+//          message.receiverUserId = dictionary["receiverUserId"] as? String
+//          message.text = dictionary["text"] as? String
+//          message.timeStamp = dictionary["timeStamp"] as? NSNumber
           
           // grouping message by user Id
           //          self.messages.append(message)
@@ -128,12 +128,12 @@ class MessagesController: UITableViewController
       (snapshot) in
       if let dictionary = snapshot.value as? [String : AnyObject]
       {
-        let message = Message()
+        let message = Message(dictionary: dictionary)
 //        message.setValuesForKeys(dictionary)
-        message.senderUserId = dictionary["senderUserId"] as? String
-        message.receiverUserId = dictionary["receiverUserId"] as? String
-        message.text = dictionary["text"] as? String
-        message.timeStamp = dictionary["timeStamp"] as? NSNumber
+//        message.senderUserId = dictionary["senderUserId"] as? String
+//        message.receiverUserId = dictionary["receiverUserId"] as? String
+//        message.text = dictionary["text"] as? String
+//        message.timeStamp = dictionary["timeStamp"] as? NSNumber
         
         // grouping message by user Id
 //          self.messages.append(message)
@@ -178,6 +178,26 @@ class MessagesController: UITableViewController
   override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat
   {
     return 80
+  }
+  
+  
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath)
+  {
+    guard let selectedRowUserId = messages[indexPath.row].retrieveOtherUserIdInTheMessage() else{
+      return
+    }
+    
+    let selectedRowUserIdRef = Database.database().reference().child("users").child(selectedRowUserId)
+    selectedRowUserIdRef.observeSingleEvent(of: .value, with:
+    {
+      (snapshot) in
+      guard let dictionary = snapshot.value as? [String : AnyObject] else {
+        return
+      }
+      let user = User(dictionary: dictionary)
+      user.id = selectedRowUserId
+      self.showChatController(user)
+    }, withCancel: nil)
   }
   
   
@@ -284,6 +304,7 @@ class MessagesController: UITableViewController
   @objc func handleRecentMessages()
   {
     let recentMessagesController = RecentMessagesController()
+    //saving the MessageController in the RecentMessagesController thus later we can present the ChatController.
     recentMessagesController.messagesController = self
     let navigationController = UINavigationController(rootViewController: recentMessagesController)
     present(navigationController, animated: true, completion: nil)
