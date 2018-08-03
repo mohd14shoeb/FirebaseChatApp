@@ -42,6 +42,8 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     super.viewDidLoad()
     collectionView?.backgroundColor = UIColor(r: 240, g: 240, b: 240)
     collectionView?.alwaysBounceVertical = true
+    //Add collectionView padding (the bottom edge make possibile to see also the last message when exceeds the collectionView frame when we are scrolling, 75 = 15 + 50 of the containerView so bottom and top padding are equivalent when we see them)
+    collectionView?.contentInset = UIEdgeInsetsMake(15, 0, 75, 0)
     //registering the cell
     collectionView?.register(ChatCellMessage.self, forCellWithReuseIdentifier: cellId)
     setupInputComponent()
@@ -83,7 +85,9 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell
   {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellId, for: indexPath) as! ChatCellMessage
-    cell.textView.text = messages[indexPath.row].text!
+    let message = messages[indexPath.row]
+    cell.textView.text = message.text
+    cell.bubbleWidthConstraint?.constant = estimatedFrameForText(text: message.text!).width + 32
     return cell
   }
   
@@ -92,7 +96,23 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
   {
-    return CGSize(width: view.frame.width, height: 80)
+    var height: CGFloat = 80
+    var width: CGFloat = 30
+    //get estimated height of the cell based on the text
+    if let text = messages[indexPath.row].text
+    {
+      height = estimatedFrameForText(text: text).height + 20
+      width = estimatedFrameForText(text: text).width + 32
+    }
+    return CGSize(width: view.frame.width, height: height)
+  }
+  
+  
+  private func estimatedFrameForText(text: String) -> CGRect
+  {
+    let size = CGSize(width: 200, height: 1000)
+    let options = NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin)
+    return NSString(string: text).boundingRect(with: size, options: options, attributes: [NSAttributedStringKey.font: UIFont.systemFont(ofSize: 16)], context: nil)
   }
   
   
@@ -140,9 +160,6 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     ContainerViewSeparatorLine.heightAnchor.constraint(equalToConstant: 2).isActive = true
     ContainerViewSeparatorLine.bottomAnchor.constraint(equalTo: containerView.topAnchor).isActive = true
     ContainerViewSeparatorLine.widthAnchor.constraint(equalTo: containerView.widthAnchor).isActive = true
-    
-
-    
   }
   
   func textFieldShouldReturn(_ textField: UITextField) -> Bool
@@ -175,6 +192,9 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         print(error)
         return
       }
+      //clearing inputTextField
+      self.sendMessageTextField.text = nil
+      
       let messagesGroudpedById = Database.database().reference().child("messagesGroudpedById").child(senderUserId!)
       let messageId = childRef.key
       messagesGroudpedById.updateChildValues([messageId: 1])
