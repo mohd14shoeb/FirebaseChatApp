@@ -96,7 +96,6 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   {
     let keyboardFrame = (notification.userInfo?[UIKeyboardFrameEndUserInfoKey]) as? NSValue
     containerViewBottomConstraint?.constant = -(keyboardFrame?.cgRectValue.height)!
-    
     //animate the container so it's smooth
     let keyboardDuration = notification.userInfo?[UIKeyboardAnimationDurationUserInfoKey] as? Double
     UIView.animate(withDuration: keyboardDuration!)
@@ -110,9 +109,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   @objc func manageKeyboardWillHide(notification: Notification)
   {
     let keyboardFrame = (notification.userInfo?[UIKeyboardFrameEndUserInfoKey]) as? NSValue
-    
     containerViewBottomConstraint?.constant = 0
-  
     let keyboardDuration = notification.userInfo?[UIKeyboardAnimationDurationUserInfoKey] as? Double
     UIView.animate(withDuration: keyboardDuration!)
     {
@@ -124,8 +121,8 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   
   func observeMessages()
   {
-    guard let loggedUserId = Auth.auth().currentUser?.uid else { return }
-    let userMessages = Database.database().reference().child("messagesGroudpedById").child(loggedUserId)
+    guard let loggedUserId = Auth.auth().currentUser?.uid, let receiverId = user?.id  else { return }
+    let userMessages = Database.database().reference().child("messagesGroudpedById").child(loggedUserId).child(receiverId)
     userMessages.observe(.childAdded, with:
     {
       (snapshot) in
@@ -137,6 +134,9 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         (snapshot) in
         guard let dictionary = snapshot.value as? [String : AnyObject] else { return }
         let message = Message(dictionary: dictionary)
+        
+        // Here we must fetch only the message that belong to the user of the current conversation. But this block is also called for other users that are sending a message to one of the user of this conversation.
+        
         if self.user?.id! == message.retrieveOtherUserIdInTheMessage()
         {
           self.messages.append(message)
@@ -310,9 +310,9 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
       self.sendMessageTextField.text = nil
       // make the sender and the receiver be able to see reciprocal messages
       let messageId = childRef.key
-      let senderIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(senderUserId!)
+      let senderIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(senderUserId!).child(receiverUserId!)
       senderIdMessagesRef.updateChildValues([messageId: 1])
-      let receiverIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(receiverUserId!)
+      let receiverIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(receiverUserId!).child(senderUserId!)
       receiverIdMessagesRef.updateChildValues([messageId: 1])
     }
   }

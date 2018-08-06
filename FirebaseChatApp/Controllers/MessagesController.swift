@@ -78,45 +78,50 @@ class MessagesController: UITableViewController
       return
     }
     //get the reference only of the messages that the current user has sent
-    let ref = Database.database().reference().child("messagesGroudpedById").child(uid)
-    ref.observe(.childAdded, with:
+    let loggedUserRef = Database.database().reference().child("messagesGroudpedById").child(uid)
+    loggedUserRef.observe(.childAdded, with:
     {
       (snapshot) in
-      let messageId = snapshot.key
-      let messageRef = Database.database().reference().child("messages").child(messageId)
-      messageRef.observeSingleEvent(of: .value, with:
+      let receiverUserId = snapshot.key
+      let receiverUserRef = Database.database().reference().child("messagesGroudpedById").child(uid).child(receiverUserId)
+      
+      receiverUserRef.observeSingleEvent(of: .childAdded, with:
       {
         (snapshot) in
-
-        if let dictionary = snapshot.value as? [String : AnyObject]
-        {
-          let message = Message(dictionary: dictionary)
-          //        message.setValuesForKeys(dictionary)
-//          message.senderUserId = dictionary["senderUserId"] as? String
-//          message.receiverUserId = dictionary["receiverUserId"] as? String
-//          message.text = dictionary["text"] as? String
-//          message.timeStamp = dictionary["timeStamp"] as? NSNumber
-          
-          // grouping message by user Id
-          //          self.messages.append(message)
-          if let otherUserId = message.retrieveOtherUserIdInTheMessage()
-          {
-            self.messagesGroupedByUserId[otherUserId] = message
-            // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
-            self.messages = Array(self.messagesGroupedByUserId.values)
-            self.messages.sort(by:
-              {
-                (msg1, msg2) -> Bool in
-                return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
-            })
-          }
-          
-          //every time we receive a message a new timer is created but because we invalidate it, only the last timer is executed
-          self.timer?.invalidate()
-          self.timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleTableViewReloadData), userInfo: nil, repeats: false)
-          
+        let messageId = snapshot.key
+        let messageRef = Database.database().reference().child("messages").child(messageId)
         
-        }
+        messageRef.observeSingleEvent(of: .value, with:
+        {
+          (snapshot) in
+          if let dictionary = snapshot.value as? [String : AnyObject]
+          {
+            let message = Message(dictionary: dictionary)
+            //        message.setValuesForKeys(dictionary)
+            //          message.senderUserId = dictionary["senderUserId"] as? String
+            //          message.receiverUserId = dictionary["receiverUserId"] as? String
+            //          message.text = dictionary["text"] as? String
+            //          message.timeStamp = dictionary["timeStamp"] as? NSNumber
+            
+            // grouping message by user Id
+            //          self.messages.append(message)
+            if let otherUserId = message.retrieveOtherUserIdInTheMessage()
+            {
+              self.messagesGroupedByUserId[otherUserId] = message
+              // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
+              self.messages = Array(self.messagesGroupedByUserId.values)
+              self.messages.sort(by:
+                {
+                  (msg1, msg2) -> Bool in
+                  return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
+              })
+            }
+            
+            //every time we receive a message a new timer is created but because we invalidate it, only the last timer is executed
+            self.timer?.invalidate()
+            self.timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleTableViewReloadData), userInfo: nil, repeats: false)
+          }
+        }, withCancel: nil)
       }, withCancel: nil)
     }, withCancel: nil )
   }
