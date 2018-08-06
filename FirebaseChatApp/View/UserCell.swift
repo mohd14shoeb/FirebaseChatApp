@@ -15,7 +15,7 @@ import Firebase
 class UserCell: UITableViewCell
 {
   
-  //this class is responsible to customize the view of the cell like the profileImageView and other things and not the tableView methods
+  //this class is responsible to customize the view of the cell like the profileImageView and the name
   var message: Message?
   {
     didSet

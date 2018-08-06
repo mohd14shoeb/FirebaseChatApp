@@ -13,18 +13,33 @@ import UIKit
 
 class ChatCellMessage: UICollectionViewCell
 {
+  
+  //static color for blue and gray messages bubbles
+  static let bubbleBlueColor = UIColor(r: 90, g: 194, b: 250)
+  static let bubbleGrayColor = UIColor(r: 230, g: 230, b: 230)
   // used to dinamically change bubble width
-  var bubbleWidthConstraint: NSLayoutConstraint?
+  var bubbleWidthAnchorConstraint: NSLayoutConstraint?
+  var bubbleRightAnchorConstraint: NSLayoutConstraint?
+  var bubbleLeftAnchorConstraint: NSLayoutConstraint?
   
   let textView: UITextView =
   {
     let textView = UITextView()
     textView.text = "Some Text"
-//    textView.backgroundColor = UIColor(r: 240, g: 240, b: 240)
     textView.font = UIFont.systemFont(ofSize: 16)
     textView.translatesAutoresizingMaskIntoConstraints = false
     textView.backgroundColor = UIColor.clear
     return textView
+  }()
+  
+  var profileImageView: UIImageView =
+  {
+    let imageView = UIImageView()
+    imageView.image = UIImage(named: "cellprofileimage")
+    imageView.translatesAutoresizingMaskIntoConstraints = false
+    imageView.layer.cornerRadius = 16 // half of his width constraints
+    imageView.layer.masksToBounds = true
+    return imageView
   }()
   
   
@@ -32,7 +47,7 @@ class ChatCellMessage: UICollectionViewCell
   {
     let bv = UIView()
     //view.backgroundColor = UIColor(r: 0, g: 137, b: 249)
-    bv.backgroundColor = UIColor(r: 90, g: 194, b: 250)
+    bv.backgroundColor = ChatCellMessage.bubbleBlueColor
     bv.translatesAutoresizingMaskIntoConstraints = false
     bv.layer.cornerRadius = 16
 //    bv.clipsToBounds = true
@@ -48,12 +63,25 @@ class ChatCellMessage: UICollectionViewCell
     super.init(frame: frame)
     addSubview(bubbleView)
     addSubview(textView)
+    addSubview(profileImageView)
+    
+    profileImageView.leftAnchor.constraint(equalTo: self.leftAnchor, constant: 8).isActive = true
+    profileImageView.centerYAnchor.constraint(equalTo: self.centerYAnchor).isActive = true
+    profileImageView.widthAnchor.constraint(equalToConstant: 32).isActive = true
+    profileImageView.heightAnchor.constraint(equalToConstant: 32).isActive = true
     
     //add constraint because otherwise we can't see it in the cell
-    bubbleView.rightAnchor.constraint(equalTo: self.rightAnchor, constant: -8).isActive = true
+    bubbleRightAnchorConstraint = bubbleView.rightAnchor.constraint(equalTo: self.rightAnchor, constant: -8)
+    bubbleRightAnchorConstraint?.isActive = true
+    
+    //we use this to switch the bubble to the left for received messages(we don't need isActive because by default is false)
+    bubbleLeftAnchorConstraint = bubbleView.leftAnchor.constraint(equalTo: profileImageView.rightAnchor, constant: 8)
+    
+    
+    
     bubbleView.topAnchor.constraint(equalTo: self.topAnchor).isActive = true
-    bubbleWidthConstraint = bubbleView.widthAnchor.constraint(equalToConstant: 200)
-    bubbleWidthConstraint?.isActive = true
+    bubbleWidthAnchorConstraint = bubbleView.widthAnchor.constraint(equalToConstant: 200)
+    bubbleWidthAnchorConstraint?.isActive = true
     bubbleView.heightAnchor.constraint(equalTo: self.heightAnchor).isActive = true
     
     //the textView adapts to the width and height of the bubbleView

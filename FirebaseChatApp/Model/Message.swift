@@ -30,7 +30,7 @@ class Message: NSObject
   
   func retrieveOtherUserIdInTheMessage() -> String?
   {
-    return receiverUserId == Auth.auth().currentUser?.uid ? senderUserId : receiverUserId
+    return senderUserId == Auth.auth().currentUser?.uid ? receiverUserId : senderUserId
     
     //is the same as the following
 //    if receiverUserId == Auth.auth().currentUser?.uid{

@@ -13,8 +13,9 @@ class MessagesController: UITableViewController
 {
   
   var messages = [Message]()
-  var messagesGroupedByUserId = [String:Message]()
+  var messagesGroupedByUserId = [String : Message]()
   let cellId = "cellId"
+  var timer: Timer?
   
   
   lazy var tapChatControllerGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(showChatController))
@@ -62,11 +63,11 @@ class MessagesController: UITableViewController
     
 //    observerMessages()
     
-    
-    
     tableView.register(UserCell.self, forCellReuseIdentifier: "cellId")
     
     checkIfUserIsLoggedIn()
+    
+
   }
   
   
@@ -86,6 +87,7 @@ class MessagesController: UITableViewController
       messageRef.observeSingleEvent(of: .value, with:
       {
         (snapshot) in
+
         if let dictionary = snapshot.value as? [String : AnyObject]
         {
           let message = Message(dictionary: dictionary)
@@ -97,9 +99,9 @@ class MessagesController: UITableViewController
           
           // grouping message by user Id
           //          self.messages.append(message)
-          if let receiverUserId = message.receiverUserId
+          if let otherUserId = message.retrieveOtherUserIdInTheMessage()
           {
-            self.messagesGroupedByUserId[receiverUserId] = message
+            self.messagesGroupedByUserId[otherUserId] = message
             // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
             self.messages = Array(self.messagesGroupedByUserId.values)
             self.messages.sort(by:
@@ -108,51 +110,25 @@ class MessagesController: UITableViewController
                 return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
             })
           }
-          DispatchQueue.main.async{
-            self.tableView.reloadData()
-          }
+          
+          //every time we receive a message a new timer is created but because we invalidate it, only the last timer is executed
+          self.timer?.invalidate()
+          self.timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleTableViewReloadData), userInfo: nil, repeats: false)
+          
+        
         }
-        
-        
-        
       }, withCancel: nil)
     }, withCancel: nil )
   }
   
-  //function to Observe all the sent/received message
-  func observerMessages()
+  
+  @objc private func handleTableViewReloadData()
   {
-    let ref = Database.database().reference().child("messages")
-    ref.observe(.childAdded, with:
+    DispatchQueue.main.async
     {
-      (snapshot) in
-      if let dictionary = snapshot.value as? [String : AnyObject]
-      {
-        let message = Message(dictionary: dictionary)
-//        message.setValuesForKeys(dictionary)
-//        message.senderUserId = dictionary["senderUserId"] as? String
-//        message.receiverUserId = dictionary["receiverUserId"] as? String
-//        message.text = dictionary["text"] as? String
-//        message.timeStamp = dictionary["timeStamp"] as? NSNumber
-        
-        // grouping message by user Id
-//          self.messages.append(message)
-        if let receiverUserId = message.receiverUserId
-        {
-          self.messagesGroupedByUserId[receiverUserId] = message
-          // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
-          self.messages = Array(self.messagesGroupedByUserId.values)
-          self.messages.sort(by:
-          {
-            (msg1, msg2) -> Bool in
-            return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
-          })
-        }
-        DispatchQueue.main.async{
-          self.tableView.reloadData()
-        }
-      }
-    }, withCancel: nil)
+      print("\n called observeUserMessages \n")
+      self.tableView.reloadData()
+    }
   }
   
   
