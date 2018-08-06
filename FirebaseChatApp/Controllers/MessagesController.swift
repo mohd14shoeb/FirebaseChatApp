@@ -89,46 +89,51 @@ class MessagesController: UITableViewController
       {
         (snapshot) in
         let messageId = snapshot.key
-        let messageRef = Database.database().reference().child("messages").child(messageId)
-        
-        messageRef.observeSingleEvent(of: .value, with:
-        {
-          (snapshot) in
-          if let dictionary = snapshot.value as? [String : AnyObject]
-          {
-            let message = Message(dictionary: dictionary)
-            //        message.setValuesForKeys(dictionary)
-            //          message.senderUserId = dictionary["senderUserId"] as? String
-            //          message.receiverUserId = dictionary["receiverUserId"] as? String
-            //          message.text = dictionary["text"] as? String
-            //          message.timeStamp = dictionary["timeStamp"] as? NSNumber
-            
-            // grouping message by user Id
-            //          self.messages.append(message)
-            if let otherUserId = message.retrieveOtherUserIdInTheMessage()
-            {
-              self.messagesGroupedByUserId[otherUserId] = message
-              // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp.
-              self.messages = Array(self.messagesGroupedByUserId.values)
-              self.messages.sort(by:
-                {
-                  (msg1, msg2) -> Bool in
-                  return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
-              })
-            }
-            
-            //every time we receive a message a new timer is created but because we invalidate it, only the last timer is executed
-            self.timer?.invalidate()
-            self.timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleTableViewReloadData), userInfo: nil, repeats: false)
-          }
-        }, withCancel: nil)
+        self.fetchMessage(with: messageId)
       }, withCancel: nil)
     }, withCancel: nil )
   }
   
   
+  private func fetchMessage(with messageId: String)
+  {
+    let messageRef = Database.database().reference().child("messages").child(messageId)
+    messageRef.observeSingleEvent(of: .value, with:
+      {
+        (snapshot) in
+        if let dictionary = snapshot.value as? [String : AnyObject]
+        {
+          let message = Message(dictionary: dictionary)
+          if let otherUserId = message.retrieveOtherUserIdInTheMessage()
+          {
+            self.messagesGroupedByUserId[otherUserId] = message
+          }
+          self.reloadCollectionViewData()
+        }
+    }, withCancel: nil)
+  }
+  
+  
+  /* Description: every time we receive a message a new timer is created but because we invalidate it, only the last timer is executed, thus we reload the collectionview once */
+  
+  private func reloadCollectionViewData()
+  {
+    self.timer?.invalidate()
+    self.timer = Timer.scheduledTimer(timeInterval: 0.1, target: self, selector: #selector(self.handleTableViewReloadData), userInfo: nil, repeats: false)
+  }
+  
+  
   @objc private func handleTableViewReloadData()
   {
+    // return an array containing the message sent/received by the same id. This array will contian the items in the same order as the were sent, so we should order them by the timestamp. Also we have moved the following 6 line of code from the observeUserMessages because we don't need to rebuild the array of messages everytime we receive a new message but we can do it only one time when we reload the collectionview data, thus we reduce the cost.
+    //self.messages.append(message)
+    self.messages = Array(self.messagesGroupedByUserId.values)
+    self.messages.sort(by:
+      {
+        (msg1, msg2) -> Bool in
+        return (msg1.timeStamp?.intValue)! > (msg2.timeStamp?.intValue)!
+    })
+    
     DispatchQueue.main.async
     {
       print("\n called observeUserMessages \n")

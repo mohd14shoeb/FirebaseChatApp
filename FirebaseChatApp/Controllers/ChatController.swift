@@ -135,14 +135,10 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         guard let dictionary = snapshot.value as? [String : AnyObject] else { return }
         let message = Message(dictionary: dictionary)
         
-        // Here we must fetch only the message that belong to the user of the current conversation. But this block is also called for other users that are sending a message to one of the user of this conversation.
-        
-        if self.user?.id! == message.retrieveOtherUserIdInTheMessage()
-        {
-          self.messages.append(message)
-          DispatchQueue.main.async{
-            self.collectionView?.reloadData()
-          }
+        // I have changed the Firebase structure, so that we don't fetch unnecessary messages anymore (the ones sent from other user that are not part of the ongoing conversation). For this reason we don't need anymore the che 'if self.user?.id! == message.retrieveOtherUserIdInTheMessage()'
+        self.messages.append(message)
+        DispatchQueue.main.async{
+          self.collectionView?.reloadData()
         }
       }, withCancel: nil)
     }, withCancel: nil)

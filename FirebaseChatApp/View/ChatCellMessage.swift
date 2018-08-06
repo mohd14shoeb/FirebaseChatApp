@@ -35,10 +35,10 @@ class ChatCellMessage: UICollectionViewCell
   var profileImageView: UIImageView =
   {
     let imageView = UIImageView()
-    imageView.image = UIImage(named: "cellprofileimage")
     imageView.translatesAutoresizingMaskIntoConstraints = false
     imageView.layer.cornerRadius = 16 // half of his width constraints
     imageView.layer.masksToBounds = true
+    imageView.contentMode = .scaleAspectFill
     return imageView
   }()
   
