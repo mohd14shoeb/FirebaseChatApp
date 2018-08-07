@@ -167,6 +167,8 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     {
       // the 32 was obtained after severals guesses until we find the correct value
       cell.bubbleWidthAnchorConstraint?.constant = estimatedFrameForText(text: text).width + 32
+    }else if message.imageUrl != nil {
+      cell.bubbleWidthAnchorConstraint?.constant = 200
     }
     return cell
   }
@@ -213,13 +215,21 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
   {
     var height: CGFloat = 80
+    let width = UIScreen.main.bounds.width
     //get estimated height of the cell based on the text
-    if let text = messages[indexPath.row].text
+    let message = messages[indexPath.row]
+    
+    if let text = message.text
     {
       // the 20 here is a guesse until we find the correct value
       height = estimatedFrameForText(text: text).height + 20
+    }else if let imageWith = message.imageWidth?.floatValue, let imageHeight = message.imageHeight?.floatValue
+    {
+      // h1 / w1 = h2 / w2 (we solve this)
+      height = CGFloat(imageHeight / imageWith * 200)
+      
     }
-    return CGSize(width: view.frame.width, height: height)
+    return CGSize(width: width, height: height)
   }
   
   
@@ -322,12 +332,12 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     }
     if let finalImage = pickerImageSelected
     {
-      uploadImageToFirebase(with: finalImage)
+      uploadImageToFirebase(image: finalImage)
     }
     dismiss(animated: true, completion: nil)
   }
   
-  func uploadImageToFirebase(with image: UIImage)
+  func uploadImageToFirebase(image: UIImage)
   {
     let imageName = UUID().uuidString
     let imageNameRef = Storage.storage().reference().child("message_images").child(imageName)
@@ -348,38 +358,12 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
           }
           if let imageUrl = url?.absoluteString
           {
-            self.sendMessage(withImageUrl: imageUrl)
+            self.sendMessageWithImage(imageUrl, image: image)
           }
         })
       }
     }
   }
-  
-  private func sendMessage(withImageUrl imageUrl: String)
-  {
-    let ref = Database.database().reference().child("messages")
-    let receiverUserId = user?.id
-    let senderUserId = Auth.auth().currentUser?.uid
-    let childRef = ref.childByAutoId()
-    let messageTimeStamp = Date().timeIntervalSince1970
-    let message = ["senderUserId": senderUserId!, "receiverUserId":
-      receiverUserId, "imageUrl": imageUrl, "timeStamp" : messageTimeStamp] as [String : AnyObject]
-    childRef.updateChildValues(message)
-    {
-      (error, ref) in
-      if error != nil{
-        print(error)
-        return
-      }
-      self.sendMessageTextField.text = nil
-      let messageId = childRef.key
-      let senderIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(senderUserId!).child(receiverUserId!)
-      senderIdMessagesRef.updateChildValues([messageId: 1])
-      let receiverIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(receiverUserId!).child(senderUserId!)
-      receiverIdMessagesRef.updateChildValues([messageId: 1])
-    }
-  }
-  
   
   
   func imagePickerControllerDidCancel(_ picker: UIImagePickerController)
@@ -398,14 +382,30 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   
   @objc func handleSendMessage()
   {
+    let messageValues = ["text": sendMessageTextField.text!] as [String:AnyObject]
+    sendMessageWithValues(values: messageValues)
+  }
+  
+  private func sendMessageWithImage(_ imageUrl: String, image: UIImage)
+  {
+    let messageValues = ["imageUrl": imageUrl,"imageWidth" : image.size.width, "imageHeight": image.size.height] as [String: AnyObject]
+    sendMessageWithValues(values: messageValues)
+  }
+  
+  private func sendMessageWithValues(values: [String : AnyObject])
+  {
     let ref = Database.database().reference().child("messages")
     let receiverUserId = user?.id
     let senderUserId = Auth.auth().currentUser?.uid
     let childRef = ref.childByAutoId()
     let messageTimeStamp = Date().timeIntervalSince1970
-    let message = ["senderUserId": senderUserId!, "receiverUserId":
-    receiverUserId, "text": sendMessageTextField.text, "timeStamp" : messageTimeStamp] as [String : AnyObject]
-    childRef.updateChildValues(message)
+    var messageValues = ["senderUserId": senderUserId!, "receiverUserId":
+      receiverUserId,"timeStamp" : messageTimeStamp] as [String : AnyObject]
+    
+    //append the parameter values to the above common messageValues
+    messageValues.update(other: values)
+    
+    childRef.updateChildValues(messageValues)
     {
       (error, ref) in
       if error != nil{
@@ -422,4 +422,18 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   }
   
   
+  
+  
 }
+
+
+extension Dictionary
+{
+  mutating func update(other:Dictionary)
+  {
+    for (key,value) in other {
+      self.updateValue(value, forKey:key)
+    }
+  }
+}
+
