@@ -81,13 +81,23 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     //figure out the size of the keyboard
     NotificationCenter.default.addObserver(self, selector: #selector(manageKeyboardWillShow), name: .UIKeyboardWillShow, object: nil)
     NotificationCenter.default.addObserver(self, selector: #selector(manageKeyboardWillHide), name: .UIKeyboardWillHide, object: nil)
+    NotificationCenter.default.addObserver(self, selector: #selector(manageKeyboardDidShow), name: .UIKeyboardDidShow, object: nil)
   }
+  
   
   override func viewDidDisappear(_ animated: Bool)
   {
     super.viewDidDisappear(animated)
     // remobe the observers for handling the keyboard to avoid memory leaks
     NotificationCenter.default.removeObserver(self)
+  }
+  
+  @objc func manageKeyboardDidShow()
+  {
+    if messages.count > 0 {
+      let indexPath = IndexPath(item: messages.count - 1, section: 0)
+      collectionView?.scrollToItem(at: indexPath, at: .bottom, animated: true)
+    }
   }
   
   
@@ -137,12 +147,16 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         
         // I have changed the Firebase structure, so that we don't fetch unnecessary messages anymore (the ones sent from other user that are not part of the ongoing conversation). For this reason we don't need anymore the che 'if self.user?.id! == message.retrieveOtherUserIdInTheMessage()'
         self.messages.append(message)
-        DispatchQueue.main.async{
+        DispatchQueue.main.async
+        {
           self.collectionView?.reloadData()
+          let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
+          self.collectionView?.scrollToItem(at: indexPath, at: .bottom, animated: true)
         }
       }, withCancel: nil)
     }, withCancel: nil)
   }
+  
   
   
   
