@@ -9,7 +9,7 @@
 import UIKit
 import Firebase
 
-class ChatController: UICollectionViewController, UITextFieldDelegate, UICollectionViewDelegateFlowLayout
+class ChatController: UICollectionViewController, UITextFieldDelegate, UICollectionViewDelegateFlowLayout, UINavigationControllerDelegate, UIImagePickerControllerDelegate
 {
   
   let cellId = "cellId"
@@ -153,25 +153,40 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     return messages.count
   }
   
+  
+  
   override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell
   {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellId, for: indexPath) as! ChatCellMessage
     let message = messages[indexPath.row]
     cell.textView.text = message.text
     
-    setupBubbleAndtextCell(cell: cell, message: message)
+    setupBubbleAndTextCell(cell: cell, message: message)
     
-    // the 32 was obtained after severals guesses until we find the correct value
-    cell.bubbleWidthAnchorConstraint?.constant = estimatedFrameForText(text: message.text!).width + 32
-    
+    if let text = message.text
+    {
+      // the 32 was obtained after severals guesses until we find the correct value
+      cell.bubbleWidthAnchorConstraint?.constant = estimatedFrameForText(text: text).width + 32
+    }
     return cell
   }
   
+  
+  
+  
   /*Description: because the cell are reusable in the CollectionView, we must define what happen in both cases*/
-  private func setupBubbleAndtextCell(cell: ChatCellMessage, message: Message)
+  private func setupBubbleAndTextCell(cell: ChatCellMessage, message: Message)
   {
     if let profileImageUrl = self.user?.profileImageUrl {
       cell.profileImageView.loadImageUsingCache(with: profileImageUrl)
+    }
+    if let messageImageUrl = message.imageUrl{
+      cell.messageImageView.loadImageUsingCache(with: messageImageUrl)
+      // because the cell are reusable we hide the image if the message sent contain text and not an image
+      cell.messageImageView.isHidden = false
+      cell.bubbleView.backgroundColor = UIColor.clear
+    }else{
+      cell.messageImageView.isHidden = true
     }
     
     
@@ -193,8 +208,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     
   }
   
-  
-  // this method id from UICollectionViewDelegateFlowLayout
+
   
   func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize
   {
@@ -241,6 +255,20 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     containerView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
     containerView.heightAnchor.constraint(equalToConstant: 50).isActive = true
     
+    let uploadImageView = UIImageView()
+    uploadImageView.image = UIImage(named: "attachment@512")
+    uploadImageView.isUserInteractionEnabled = true
+    uploadImageView.translatesAutoresizingMaskIntoConstraints = false
+    uploadImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleImagePicker)))
+    containerView.addSubview(uploadImageView)
+    
+    uploadImageView.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 8).isActive = true
+    uploadImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
+    uploadImageView.widthAnchor.constraint(equalToConstant: 34).isActive = true
+    uploadImageView.heightAnchor.constraint(equalToConstant: 34).isActive = true
+    
+    
+    
     let sendButton = UIButton(type: .system)
     sendButton.setTitle("Send", for: .normal)
     sendButton.translatesAutoresizingMaskIntoConstraints = false
@@ -256,7 +284,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   
     containerView.addSubview(sendMessageTextField)
     
-    sendMessageTextField.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 8).isActive = true
+    sendMessageTextField.leftAnchor.constraint(equalTo: uploadImageView.rightAnchor, constant: 8).isActive = true
     sendMessageTextField.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
     sendMessageTextField.rightAnchor.constraint(equalTo: sendButton.leftAnchor).isActive = true
     sendMessageTextField.heightAnchor.constraint(equalTo: containerView.heightAnchor).isActive = true
@@ -272,29 +300,70 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     ContainerViewSeparatorLine.widthAnchor.constraint(equalTo: containerView.widthAnchor).isActive = true
   }
   
-  func textFieldShouldReturn(_ textField: UITextField) -> Bool
+  
+  
+  
+  @objc func handleImagePicker()
   {
-    textField.resignFirstResponder()
-    return true
+    let imagePickerController = UIImagePickerController()
+    imagePickerController.delegate = self
+    present(imagePickerController, animated: true, completion: nil)
   }
   
-  @objc func handleSendMessage()
+  
+  func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any])
+  {
+    var pickerImageSelected: UIImage?
+    if let editedImage = info["UIImagePickerControllerEditedImage"] as? UIImage
+    {
+      pickerImageSelected = editedImage
+    }else if let originalImage = info["UIImagePickerControllerOriginalImage"] as? UIImage {
+      pickerImageSelected = originalImage
+    }
+    if let finalImage = pickerImageSelected
+    {
+      uploadImageToFirebase(with: finalImage)
+    }
+    dismiss(animated: true, completion: nil)
+  }
+  
+  func uploadImageToFirebase(with image: UIImage)
+  {
+    let imageName = UUID().uuidString
+    let imageNameRef = Storage.storage().reference().child("message_images").child(imageName)
+    if let uploadData = UIImageJPEGRepresentation(image, 0.2)
+    {
+      imageNameRef.putData(uploadData, metadata: nil)
+      {
+        (metadata, error) in
+        if error != nil{
+          print("Failed to upload image: ", error)
+          return
+        }
+        imageNameRef.downloadURL(completion:
+        {
+          (url, error) in
+          if error != nil{
+            print("Failed to download image url: ", error)
+          }
+          if let imageUrl = url?.absoluteString
+          {
+            self.sendMessage(withImageUrl: imageUrl)
+          }
+        })
+      }
+    }
+  }
+  
+  private func sendMessage(withImageUrl imageUrl: String)
   {
     let ref = Database.database().reference().child("messages")
-    // to represent a list of message, we generate a unique node
-    // user selected by the current logged user, to send a message
     let receiverUserId = user?.id
-    // curren logged user
     let senderUserId = Auth.auth().currentUser?.uid
     let childRef = ref.childByAutoId()
     let messageTimeStamp = Date().timeIntervalSince1970
     let message = ["senderUserId": senderUserId!, "receiverUserId":
-    receiverUserId, "text": sendMessageTextField.text, "timeStamp" : messageTimeStamp] as [String : AnyObject]
-    //send message adding every time a new one without replacing that already sent
-    
-    
-    // display all the messages that was sent/received of the current logged user in the ChatController
-      //ref.childByAutoId().updateChildValues(message)
+      receiverUserId, "imageUrl": imageUrl, "timeStamp" : messageTimeStamp] as [String : AnyObject]
     childRef.updateChildValues(message)
     {
       (error, ref) in
@@ -302,9 +371,48 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         print(error)
         return
       }
-      //clearing inputTextField
       self.sendMessageTextField.text = nil
-      // make the sender and the receiver be able to see reciprocal messages
+      let messageId = childRef.key
+      let senderIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(senderUserId!).child(receiverUserId!)
+      senderIdMessagesRef.updateChildValues([messageId: 1])
+      let receiverIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(receiverUserId!).child(senderUserId!)
+      receiverIdMessagesRef.updateChildValues([messageId: 1])
+    }
+  }
+  
+  
+  
+  func imagePickerControllerDidCancel(_ picker: UIImagePickerController)
+  {
+    dismiss(animated: true, completion: nil)
+  }
+  
+  
+  func textFieldShouldReturn(_ textField: UITextField) -> Bool
+  {
+    textField.resignFirstResponder()
+    return true
+  }
+  
+  /* Description: this function create a list of message (otherwise a message sent will replace the pevious one) by adding an unique id to every message. Then it creates a correspondence, between the sender and the receiver of that message. Thus they can see only their messages. */
+  
+  @objc func handleSendMessage()
+  {
+    let ref = Database.database().reference().child("messages")
+    let receiverUserId = user?.id
+    let senderUserId = Auth.auth().currentUser?.uid
+    let childRef = ref.childByAutoId()
+    let messageTimeStamp = Date().timeIntervalSince1970
+    let message = ["senderUserId": senderUserId!, "receiverUserId":
+    receiverUserId, "text": sendMessageTextField.text, "timeStamp" : messageTimeStamp] as [String : AnyObject]
+    childRef.updateChildValues(message)
+    {
+      (error, ref) in
+      if error != nil{
+        print(error)
+        return
+      }
+      self.sendMessageTextField.text = nil
       let messageId = childRef.key
       let senderIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(senderUserId!).child(receiverUserId!)
       senderIdMessagesRef.updateChildValues([messageId: 1])

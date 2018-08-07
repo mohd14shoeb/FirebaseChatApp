@@ -58,7 +58,7 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
                   print(error!)
                   return
                 }
-                if let imageUrl = url?.absoluteString //optional bindig automatically unwrap
+                if let imageUrl = url?.absoluteString //optional bindig automatically unwrap the value
                 {
                   let values = ["name": name, "email": email, "profileImageUrl": imageUrl]
                   self.saveUserCredentialsWithUID(uid: uid, values: values)

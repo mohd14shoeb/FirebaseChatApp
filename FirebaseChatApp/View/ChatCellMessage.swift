@@ -43,6 +43,17 @@ class ChatCellMessage: UICollectionViewCell
   }()
   
   
+  let messageImageView: UIImageView =
+  {
+    let imageView = UIImageView()
+    imageView.translatesAutoresizingMaskIntoConstraints = false
+    imageView.layer.cornerRadius = 16
+    imageView.layer.masksToBounds = true
+    imageView.contentMode = .scaleAspectFill
+    return imageView
+  }()
+  
+  
   let bubbleView: UIView =
   {
     let bv = UIView()
@@ -64,6 +75,14 @@ class ChatCellMessage: UICollectionViewCell
     addSubview(bubbleView)
     addSubview(textView)
     addSubview(profileImageView)
+    
+    
+    // if the user send an image we add it inside of the bubble
+    bubbleView.addSubview(messageImageView)
+    messageImageView.topAnchor.constraint(equalTo: bubbleView.topAnchor).isActive = true
+    messageImageView.rightAnchor.constraint(equalTo: bubbleView.rightAnchor).isActive = true
+    messageImageView.widthAnchor.constraint(equalTo: bubbleView.widthAnchor).isActive = true
+    messageImageView.heightAnchor.constraint(equalTo: bubbleView.heightAnchor).isActive = true
     
     profileImageView.leftAnchor.constraint(equalTo: self.leftAnchor, constant: 8).isActive = true
     profileImageView.centerYAnchor.constraint(equalTo: self.centerYAnchor).isActive = true

@@ -57,20 +57,14 @@ class MessagesController: UITableViewController
     super.viewDidLoad()
     // logout button
     navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Logout", style: .plain, target: self, action: #selector(handleLogout))
-    
+    // new messages button
     let writeImageIcon = UIImage(named: "recent_message_icon")
     navigationItem.rightBarButtonItem = UIBarButtonItem(image: writeImageIcon, style: .plain, target: self, action: #selector(handleRecentMessages))
     
-//    observerMessages()
-    
     tableView.register(UserCell.self, forCellReuseIdentifier: "cellId")
-    
-    checkIfUserIsLoggedIn()
-    
 
+    checkIfUserIsLoggedIn()
   }
-  
-  
   
   func observeUserMessages()
   {

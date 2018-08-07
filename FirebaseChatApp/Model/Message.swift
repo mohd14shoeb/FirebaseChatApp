@@ -15,6 +15,7 @@ class Message: NSObject
   var receiverUserId: String?
   var text: String?
   var timeStamp: NSNumber?
+  var imageUrl: String?
 
   
   
@@ -24,6 +25,7 @@ class Message: NSObject
     self.receiverUserId = dictionary["receiverUserId"] as? String
     self.text = dictionary["text"] as? String
     self.timeStamp = dictionary["timeStamp"] as? NSNumber
+    self.imageUrl = dictionary["imageUrl"] as? String
   }
   
   /* Description: if the current user id is receiverUserId we return the sernderUserId otherwise we do the opposite( in the current analyzed message there is one sender and one receiver )*/
