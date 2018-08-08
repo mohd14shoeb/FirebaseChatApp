@@ -18,6 +18,8 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   // constraint reference to correctly show the keyboard
   var containerViewBottomConstraint: NSLayoutConstraint?
   
+  //let dismissKeyboardGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+  
   // this is the user the logged user are chatting with
   var user: User?
   {
@@ -27,41 +29,17 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     }
   }
   
-  lazy var sendMessageTextField: UITextField =
-  {
-    let textField = UITextField()
-    textField.placeholder = "Enter message..."
-    textField.translatesAutoresizingMaskIntoConstraints = false
-    textField.delegate = self
-    return textField
-  }()
   
-  let containerView: UIView =
+  
+  lazy var sendMessageInputContainerView: SendMessageInputContainerView =
   {
-    let cv = UIView()
+    let containerView = SendMessageInputContainerView(frame: CGRect(x: 0, y: 0, width: self.view.frame.width, height: 50))
+    containerView.chatController = self
     //this background color trick avoid the collectionView background to overlap the containerView background
-    cv.translatesAutoresizingMaskIntoConstraints = false
-    cv.backgroundColor = .white
-    return cv
+    containerView.translatesAutoresizingMaskIntoConstraints = false
+    containerView.backgroundColor = .white
+    return containerView
   }()
-  
-  // the following view could be used to work with keyboard interactive ( we override (through get) the inputAccessoryView to make the containerView following the keyboard when it's in interactive mode. Maybe the other way is to observe the change of the frame of the keyboard
-  
-//  override var inputAccessoryView: UIView?
-//    {
-//    get {
-//      let containerView = UIView()
-//      containerView.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 50)
-//      containerView.backgroundColor = UIColor.black
-//
-//      let inputTextfield = UITextField()
-//      containerView.addSubview(inputTextfield)
-//      inputTextfield.placeholder = "Enter some text"
-//      inputTextfield.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: 50)
-//
-//      return containerView
-//    }
-//  }
   
   
   override func viewDidLoad()
@@ -72,17 +50,29 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     //Add collectionView padding (the bottom edge make possibile to see also the last message when exceeds the collectionView frame when we are scrolling, 75 = 15 + 50 of the containerView so bottom and top padding are equivalent when we see them)
     collectionView?.contentInset = UIEdgeInsetsMake(15, 0, 75, 0)
     collectionView?.scrollIndicatorInsets = UIEdgeInsetsMake(0, 0, 75, 0)
-    
     // to create the effect of dismissing the keyboard in an intercative way
     collectionView?.keyboardDismissMode = .interactive
-    
     //registering the cell
     collectionView?.register(ChatCellMessage.self, forCellWithReuseIdentifier: cellId)
-    setupInputComponent()
-
+    
+    collectionView?.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard)))
+    
+    // Adding the container input view
+    self.view.addSubview(sendMessageInputContainerView)
+    sendMessageInputContainerView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
+    containerViewBottomConstraint = sendMessageInputContainerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+    containerViewBottomConstraint?.isActive = true
+    sendMessageInputContainerView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
+    sendMessageInputContainerView.heightAnchor.constraint(equalToConstant: 50).isActive = true
+    
     setupKeyboardObservers()
   }
   
+  
+  @objc func dismissKeyboard(_ sender: UITapGestureRecognizer)
+  {
+    sendMessageInputContainerView.sendMessageTextField.resignFirstResponder()
+  }
   
   
   func setupKeyboardObservers()
@@ -160,24 +150,20 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         {
           self.collectionView?.reloadData()
           let indexPath = IndexPath(item: self.messages.count - 1, section: 0)
-          self.collectionView?.scrollToItem(at: indexPath, at: .bottom, animated: true)
+          self.collectionView?.scrollToItem(at: indexPath, at: .top, animated: true)
         }
       }, withCancel: nil)
     }, withCancel: nil)
   }
   
   
-  
-  
-  
-  
+
   override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int
   {
     return messages.count
   }
   
-  
-  
+    
   override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell
   {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellId, for: indexPath) as! ChatCellMessage
@@ -275,64 +261,6 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   
   
   
-  func setupInputComponent()
-  {
-    view.addSubview(containerView)
-    
-    containerView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-    containerViewBottomConstraint = containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-    containerViewBottomConstraint?.isActive = true
-    containerView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
-    containerView.heightAnchor.constraint(equalToConstant: 50).isActive = true
-    
-    let uploadImageView = UIImageView()
-    uploadImageView.image = UIImage(named: "attachment@512")
-    uploadImageView.isUserInteractionEnabled = true
-    uploadImageView.translatesAutoresizingMaskIntoConstraints = false
-    uploadImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleImagePicker)))
-    containerView.addSubview(uploadImageView)
-    
-    uploadImageView.leftAnchor.constraint(equalTo: containerView.leftAnchor, constant: 8).isActive = true
-    uploadImageView.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
-    uploadImageView.widthAnchor.constraint(equalToConstant: 34).isActive = true
-    uploadImageView.heightAnchor.constraint(equalToConstant: 34).isActive = true
-    
-    
-    
-    let sendButton = UIButton(type: .system)
-    sendButton.setTitle("Send", for: .normal)
-    sendButton.translatesAutoresizingMaskIntoConstraints = false
-    sendButton.addTarget(self, action: #selector(handleSendMessage), for: .touchUpInside)
-    containerView.addSubview(sendButton)
-    
-
-    sendButton.rightAnchor.constraint(equalTo: containerView.rightAnchor).isActive = true
-    sendButton.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
-    sendButton.widthAnchor.constraint(equalToConstant: 80).isActive = true
-    sendButton.heightAnchor.constraint(equalTo: containerView.heightAnchor).isActive = true
-    
-  
-    containerView.addSubview(sendMessageTextField)
-    
-    sendMessageTextField.leftAnchor.constraint(equalTo: uploadImageView.rightAnchor, constant: 8).isActive = true
-    sendMessageTextField.centerYAnchor.constraint(equalTo: containerView.centerYAnchor).isActive = true
-    sendMessageTextField.rightAnchor.constraint(equalTo: sendButton.leftAnchor).isActive = true
-    sendMessageTextField.heightAnchor.constraint(equalTo: containerView.heightAnchor).isActive = true
-    
-    let ContainerViewSeparatorLine = UIView()
-    ContainerViewSeparatorLine.backgroundColor = UIColor(r: 220, g: 220, b: 220)
-    ContainerViewSeparatorLine.translatesAutoresizingMaskIntoConstraints = false
-    containerView.addSubview(ContainerViewSeparatorLine)
-    
-    ContainerViewSeparatorLine.widthAnchor.constraint(equalTo: containerView.widthAnchor).isActive = true
-    ContainerViewSeparatorLine.heightAnchor.constraint(equalToConstant: 2).isActive = true
-    ContainerViewSeparatorLine.bottomAnchor.constraint(equalTo: containerView.topAnchor).isActive = true
-    ContainerViewSeparatorLine.widthAnchor.constraint(equalTo: containerView.widthAnchor).isActive = true
-  }
-  
-  
-  
-  
   @objc func handleImagePicker()
   {
     let imagePickerController = UIImagePickerController()
@@ -392,17 +320,12 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   }
   
   
-  func textFieldShouldReturn(_ textField: UITextField) -> Bool
-  {
-    textField.resignFirstResponder()
-    return true
-  }
   
   /* Description: this function create a list of message (otherwise a message sent will replace the pevious one) by adding an unique id to every message. Then it creates a correspondence, between the sender and the receiver of that message. Thus they can see only their messages. */
   
   @objc func handleSendMessage()
   {
-    let messageValues = ["text": sendMessageTextField.text!] as [String:AnyObject]
+    let messageValues = ["text": sendMessageInputContainerView.sendMessageTextField.text!] as [String : AnyObject]
     sendMessageWithValues(values: messageValues)
   }
   
@@ -432,7 +355,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         print(error)
         return
       }
-      self.sendMessageTextField.text = nil
+      self.sendMessageInputContainerView.sendMessageTextField.text = nil
       let messageId = childRef.key
       let senderIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(senderUserId!).child(receiverUserId!)
       senderIdMessagesRef.updateChildValues([messageId: 1])
@@ -470,7 +393,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
       UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations:
       {
         self.blackkBackrgoundView?.alpha = 1
-        self.containerView.alpha = 0
+        self.sendMessageInputContainerView.alpha = 0
         //calculating the correct height
         let height = self.originalImageFrame!.height / self.originalImageFrame!.width * keyWindow.frame.width
         zoomedImageView.frame = CGRect(x: 0, y: 0, width: keyWindow.frame.width, height: height)
@@ -497,7 +420,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
         zoomOutImageView.clipsToBounds = true
         zoomOutImageView.layer.cornerRadius = 16
         self.blackkBackrgoundView?.alpha = 0
-        self.containerView.alpha = 1
+        self.sendMessageInputContainerView.alpha = 1
         
       }) { (completed) in
         self.originalImageView?.isHidden = false
