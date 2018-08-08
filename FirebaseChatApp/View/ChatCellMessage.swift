@@ -22,6 +22,9 @@ class ChatCellMessage: UICollectionViewCell
   var bubbleRightAnchorConstraint: NSLayoutConstraint?
   var bubbleLeftAnchorConstraint: NSLayoutConstraint?
   
+  // use this var to delegate to the chatController the image zoom tap handling
+  var chatController: ChatController?
+  
   let textView: UITextView =
   {
     let textView = UITextView()
@@ -44,15 +47,18 @@ class ChatCellMessage: UICollectionViewCell
   }()
   
   
-  let messageImageView: UIImageView =
+  lazy var messageImageView: UIImageView =
   {
     let imageView = UIImageView()
     imageView.translatesAutoresizingMaskIntoConstraints = false
     imageView.layer.cornerRadius = 16
     imageView.layer.masksToBounds = true
     imageView.contentMode = .scaleAspectFill
+    imageView.isUserInteractionEnabled = true
+    imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleImageZoom)))
     return imageView
   }()
+  
   
   
   let bubbleView: UIView =
@@ -115,4 +121,13 @@ class ChatCellMessage: UICollectionViewCell
   {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  
+  @objc func handleImageZoom(tapGesture: UITapGestureRecognizer)
+  {
+    if let imageView = tapGesture.view as? UIImageView {
+      self.chatController?.performZoomInForImageView(imageView)
+    }
+  }
+  
 }

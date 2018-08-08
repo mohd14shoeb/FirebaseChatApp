@@ -36,6 +36,15 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     return textField
   }()
   
+  let containerView: UIView =
+  {
+    let cv = UIView()
+    //this background color trick avoid the collectionView background to overlap the containerView background
+    cv.translatesAutoresizingMaskIntoConstraints = false
+    cv.backgroundColor = .white
+    return cv
+  }()
+  
   // the following view could be used to work with keyboard interactive ( we override (through get) the inputAccessoryView to make the containerView following the keyboard when it's in interactive mode. Maybe the other way is to observe the change of the frame of the keyboard
   
 //  override var inputAccessoryView: UIView?
@@ -172,6 +181,8 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell
   {
     let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellId, for: indexPath) as! ChatCellMessage
+    cell.chatController = self
+    
     let message = messages[indexPath.row]
     cell.textView.text = message.text
     
@@ -181,8 +192,10 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
     {
       // the 32 was obtained after severals guesses until we find the correct value
       cell.bubbleWidthAnchorConstraint?.constant = estimatedFrameForText(text: text).width + 32
+      cell.textView.isHidden = false
     }else if message.imageUrl != nil {
       cell.bubbleWidthAnchorConstraint?.constant = 200
+      cell.textView.isHidden = true
     }
     return cell
   }
@@ -264,18 +277,11 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   
   func setupInputComponent()
   {
-    let containerView = UIView()
     view.addSubview(containerView)
     
-    //this background trick avoid the collectionView background to overlap the containerView background
-    containerView.backgroundColor = .white
-    
-    containerView.translatesAutoresizingMaskIntoConstraints = false
     containerView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
-    
     containerViewBottomConstraint = containerView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
     containerViewBottomConstraint?.isActive = true
-    
     containerView.widthAnchor.constraint(equalTo: view.widthAnchor).isActive = true
     containerView.heightAnchor.constraint(equalToConstant: 50).isActive = true
     
@@ -432,6 +438,71 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
       senderIdMessagesRef.updateChildValues([messageId: 1])
       let receiverIdMessagesRef = Database.database().reference().child("messagesGroudpedById").child(receiverUserId!).child(senderUserId!)
       receiverIdMessagesRef.updateChildValues([messageId: 1])
+    }
+  }
+  
+  var originalImageFrame: CGRect?
+  var blackkBackrgoundView: UIView?
+  var originalImageView: UIImageView?
+  
+  func performZoomInForImageView(_ originalImageView: UIImageView)
+  {
+    self.originalImageView = originalImageView
+    self.originalImageView?.isHidden = true
+    
+    originalImageFrame = originalImageView.superview?.convert(originalImageView.frame, to: nil)
+    let zoomedImageView = UIImageView(frame: originalImageFrame!)
+    zoomedImageView.backgroundColor = UIColor.red
+    zoomedImageView.image = originalImageView.image
+    zoomedImageView.isUserInteractionEnabled = true
+    zoomedImageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(performZoomOutForImageView)))
+    
+    if let keyWindow = UIApplication.shared.keyWindow
+    {
+      //animate a black background behind the window
+      blackkBackrgoundView = UIView(frame: keyWindow.frame)
+      blackkBackrgoundView?.backgroundColor = UIColor.black
+      blackkBackrgoundView?.alpha = 0
+      //this will appear behing the image because we add it before the zoomedImageView
+      keyWindow.addSubview(blackkBackrgoundView!)
+      keyWindow.addSubview(zoomedImageView)
+      
+      UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations:
+      {
+        self.blackkBackrgoundView?.alpha = 1
+        self.containerView.alpha = 0
+        //calculating the correct height
+        let height = self.originalImageFrame!.height / self.originalImageFrame!.width * keyWindow.frame.width
+        zoomedImageView.frame = CGRect(x: 0, y: 0, width: keyWindow.frame.width, height: height)
+        zoomedImageView.center = keyWindow.center
+        zoomedImageView.layer.masksToBounds = true
+        zoomedImageView.layer.cornerRadius = 0
+        
+      }, completion:
+      {
+        (completed) in
+      })
+      
+      
+    }
+  }
+  
+  @objc func performZoomOutForImageView(tapGesture: UITapGestureRecognizer)
+  {
+    if let zoomOutImageView = tapGesture.view
+    {
+      UIView.animate(withDuration: 0.5, delay: 0, usingSpringWithDamping: 1, initialSpringVelocity: 1, options: .curveEaseOut, animations:
+      {
+        zoomOutImageView.frame = self.originalImageFrame!
+        zoomOutImageView.clipsToBounds = true
+        zoomOutImageView.layer.cornerRadius = 16
+        self.blackkBackrgoundView?.alpha = 0
+        self.containerView.alpha = 1
+        
+      }) { (completed) in
+        self.originalImageView?.isHidden = false
+        zoomOutImageView.removeFromSuperview()
+      }
     }
   }
   
