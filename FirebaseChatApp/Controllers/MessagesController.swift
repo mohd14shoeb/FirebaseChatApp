@@ -62,8 +62,41 @@ class MessagesController: UITableViewController
     navigationItem.rightBarButtonItem = UIBarButtonItem(image: writeImageIcon, style: .plain, target: self, action: #selector(handleRecentMessages))
     
     tableView.register(UserCell.self, forCellReuseIdentifier: "cellId")
+    
+    //enable swiping of the cell
+    tableView.allowsMultipleSelectionDuringEditing = true
 
     checkIfUserIsLoggedIn()
+  }
+  
+  
+  override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool
+  {
+    return true
+  }
+  
+  
+  
+  override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCellEditingStyle, forRowAt indexPath: IndexPath)
+  {
+    //here we will perform the deletion of the delete button after the swipe
+    guard let uid = Auth.auth().currentUser?.uid else { return }
+    let message = self.messages[indexPath.row]
+    if let otherUserId = message.retrieveOtherUserIdInTheMessage()
+    {
+      Database.database().reference().child("messagesGroudpedById").child(uid).child(otherUserId).removeValue {
+        (error, ref) in
+        if error != nil{
+          print("\n Failed to delete message: ", error)
+          return
+        }
+        // We remove the messages from the dictionary instead of the array, because when we use the app we could receive multiple messages and the indexPath could be not the correct one of the message we want to delete.
+          //self.messages.remove(at: indexPath.row)
+          //self.tableView.deleteRows(at: [indexPath], with: .automatic)
+        self.messagesGroupedByUserId.removeValue(forKey: otherUserId)
+        self.reloadCollectionViewData()
+      }
+    }
   }
   
   func observeUserMessages()
@@ -78,7 +111,6 @@ class MessagesController: UITableViewController
       (snapshot) in
       let receiverUserId = snapshot.key
       let receiverUserRef = Database.database().reference().child("messagesGroudpedById").child(uid).child(receiverUserId)
-      
       receiverUserRef.observeSingleEvent(of: .childAdded, with:
       {
         (snapshot) in
@@ -86,6 +118,14 @@ class MessagesController: UITableViewController
         self.fetchMessage(with: messageId)
       }, withCancel: nil)
     }, withCancel: nil )
+    
+    // make the deletion consistent even if we remove a conversation from Firebase
+    loggedUserRef.observe(.childRemoved, with:
+    {
+      (snapshot) in
+      self.messagesGroupedByUserId.removeValue(forKey: snapshot.key)
+      self.reloadCollectionViewData()
+    }, withCancel: nil)
   }
   
   
