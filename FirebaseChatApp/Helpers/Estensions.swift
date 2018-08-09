@@ -7,11 +7,16 @@
 //
 
 import UIKit
+import Firebase
 
-// here we are caching our image so we don't need to download it the next time we access it
 
-let imageCache = NSCache<AnyObject, AnyObject>()
+// MARK: Properties
 
+// image caching thus we avoid to re-download the image if already done
+let imageCache = NSCache<NSString, UIImage>()
+
+
+// MARK: Extensions
 
 extension UIImageView
 {
@@ -19,9 +24,8 @@ extension UIImageView
   {
     //to avoid the image flashing when downloaded
     self.image = nil
-    
     //use cached image if already downloaded
-    if let cachedImage = imageCache.object(forKey: urlString as! AnyObject) as? UIImage
+    if let cachedImage = imageCache.object(forKey: NSString(string: urlString))
     {
       self.image = cachedImage
       return
@@ -33,7 +37,7 @@ extension UIImageView
       {
         (data, response, error) in
         if error != nil{
-          print(error)
+          print(error!)
           return
         }
         DispatchQueue.main.async(execute: {
@@ -41,10 +45,33 @@ extension UIImageView
           //cell.customProfileImageView.image = UIImage(data: data!)
           if let downloadedImage = UIImage(data: data!)
           {
-            imageCache.setObject(downloadedImage, forKey: urlString as! AnyObject)
+            imageCache.setObject(downloadedImage, forKey: NSString(string: urlString))
             self.image = downloadedImage
           }
         })
     }).resume()
   }
 }
+
+
+/// Extension to make easier to setup color
+
+extension UIColor
+{
+  convenience init(r: CGFloat, g: CGFloat, b: CGFloat)
+  {
+    self.init(red: r/255, green: g/255, blue: b/255, alpha: 1)
+  }
+}
+
+
+extension Dictionary
+{
+  mutating func update(other:Dictionary)
+  {
+    for (key,value) in other {
+      self.updateValue(value, forKey:key)
+    }
+  }
+}
+

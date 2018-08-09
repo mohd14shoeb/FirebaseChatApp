@@ -14,11 +14,18 @@ import Firebase
 class LoginController: UIViewController, UITextFieldDelegate
 {
   
+  // MARK: Overrided Properties
+  
+  override var preferredStatusBarStyle: UIStatusBarStyle
+  {
+    return .lightContent
+  }
   
   // MARK: Properties
-  var messagesController: MessagesController?
   
+  lazy var profileImageGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleImagePicker))
   
+  var messagesController: RecentMessagesController?
   // these are used to dinamically adapt the view when selecting segmentedControll toggle
   var textFieldsContainerViewHeighAnchor: NSLayoutConstraint?
   var nameTextFieldHeighAnchor: NSLayoutConstraint?
@@ -93,23 +100,19 @@ class LoginController: UIViewController, UITextFieldDelegate
     return field
   }()
   
-  // important lazy var here allow the target to be saved for the UITapGestureRecognizer
+  /// important lazy var here allow the target to be saved for the UITapGestureRecognizer
   lazy var profileImageView: UIImageView =
     {
       let imageView = UIImageView()
-      imageView.image = UIImage(named: "default_profileImage")
+      imageView.image = UIImage(named: "default_profileimage")
       imageView.layer.cornerRadius = 4
       imageView.clipsToBounds = true
       imageView.translatesAutoresizingMaskIntoConstraints = false
       imageView.contentMode = .scaleAspectFill
       imageView.isUserInteractionEnabled = true
-      imageView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(handleImagePicker)))
+      imageView.addGestureRecognizer(profileImageGestureRecognizer)
       return imageView
   }()
-  
-  
-  
-  
   
   
   let loginOrRegistrationSegmentedControl: UISegmentedControl =
@@ -123,9 +126,8 @@ class LoginController: UIViewController, UITextFieldDelegate
   }()
   
   
-  
-  
-  
+  // MARK: App LifeCycle
+
   
   override func viewDidLoad()
   {
@@ -134,8 +136,8 @@ class LoginController: UIViewController, UITextFieldDelegate
     view.bounds = view.frame.insetBy(dx: 0, dy: -50)
     view.addSubview(textFieldsContainerView)
     view.addSubview(loginOrRegistrationButton)
-    view.addSubview(profileImageView)
     view.addSubview(loginOrRegistrationSegmentedControl)
+    view.addSubview(profileImageView)
     
     nameTextField.delegate = self
     emailTextField.delegate = self
@@ -145,8 +147,10 @@ class LoginController: UIViewController, UITextFieldDelegate
     setupLoginOrRegistrationSegemntedControl()
     setupTextFieldsContainerView()
     setupLoginOrRegistrationButton()
-    
   }
+  
+  
+  // MARK: Functions
   
   
   func setupLoginOrRegistrationSegemntedControl()
@@ -157,22 +161,15 @@ class LoginController: UIViewController, UITextFieldDelegate
     loginOrRegistrationSegmentedControl.heightAnchor.constraint(equalToConstant: 35).isActive = true
   }
   
-  
-  // MARK: Setup UI
-  
-  
+
+
   func setupProfileImageView()
   {
-    // center and width and height
     profileImageView.centerXAnchor.constraint(equalTo: view.centerXAnchor).isActive = true
     profileImageView.bottomAnchor.constraint(equalTo: loginOrRegistrationSegmentedControl.topAnchor, constant: -12).isActive = true
     profileImageView.widthAnchor.constraint(equalToConstant: 150).isActive = true
     profileImageView.heightAnchor.constraint(equalToConstant: 150).isActive = true
-    
   }
-  
-  
-  
   
   
   func setupTextFieldsContainerView()
@@ -231,66 +228,6 @@ class LoginController: UIViewController, UITextFieldDelegate
   }
   
   
-  
-  
-  // MARK: Buttons Actions
-  
-  
-  
-  
-  @objc func handleLoginOrRegistration()
-  {
-    if loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0{
-      handleUserLogin()
-    }else{
-      handleUserRegistration()
-    }
-  }
-  
-  func handleUserLogin()
-  {
-    guard let email = emailTextField.text, let password = passwordTextField.text else
-    {
-      print("Form is not valid")
-      return
-    }
-    Auth.auth().signIn(withEmail: email, password: password)
-    {
-      (user, error) in
-      if error != nil{
-        print(error)
-        return
-      }
-      self.messagesController?.updateUserNavBarTitle()
-      self.dismiss(animated: true, completion: nil)
-    }
-  }
-  
-  
-  
-  
-  @objc func handleLoginRegistrationChangeTabs()
-  {
-    let title = loginOrRegistrationSegmentedControl.titleForSegment(at: loginOrRegistrationSegmentedControl.selectedSegmentIndex)
-    loginOrRegistrationButton.setTitle(title, for: .normal)
-    
-    // adapt the view height based on the SegmetedControl toggle
-    textFieldsContainerViewHeighAnchor?.constant = loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 100 : 150
-    // height of nameTextfield based on the SegmetedControl toggle
-    nameTextFieldHeighAnchor?.isActive = false
-    nameTextFieldHeighAnchor = nameTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 0 : 1/3)
-    nameTextFieldHeighAnchor?.isActive = true
-    //adapt the height of the email and password textField
-    emailTextFieldHeighAnchor?.isActive = false
-    emailTextFieldHeighAnchor = emailTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 1/2 : 1/3)
-    emailTextFieldHeighAnchor?.isActive = true
-    passwordTextFieldHeighAnchor?.isActive = false
-    passwordTextFieldHeighAnchor = passwordTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 1/2 : 1/3)
-    passwordTextFieldHeighAnchor?.isActive = true
-  }
-  
-  
-  
   // MARK: Delegates Functions
   
   func textFieldShouldReturn(_ textField: UITextField) -> Bool
@@ -298,41 +235,4 @@ class LoginController: UIViewController, UITextFieldDelegate
     textField.resignFirstResponder()
     return true
   }
-  
-  
-  // MARK: Other functions
-  
-  
-  override var preferredStatusBarStyle: UIStatusBarStyle
-  {
-    return .lightContent
-  }
-  
-  
-  
 }
-
-
-
-
-// Extension to make easier to setup color
-
-extension UIColor
-{
-  convenience init(r: CGFloat, g: CGFloat, b: CGFloat)
-  {
-    self.init(red: r/255, green: g/255, blue: b/255, alpha: 1)
-  }
-}
-
-
-
-
-
-
-
-
-
-
-
-

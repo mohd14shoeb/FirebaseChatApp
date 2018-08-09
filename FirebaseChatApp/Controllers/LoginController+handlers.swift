@@ -13,6 +13,7 @@ import Firebase
 extension LoginController: UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIGestureRecognizerDelegate
 {
   
+  // MARK: Functions
   
   func handleUserRegistration()
   {
@@ -21,54 +22,47 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
       print("Form is not valid")
       return
     }
-    
     Auth.auth().createUser(withEmail: email, password: password, completion:
     {
-        (user: AuthDataResult?, error) in
-        if error != nil {
-          print(error)
-          return
-        }
-        guard let uid = Auth.auth().currentUser?.uid else{ return }
-        
-        // Successufully authenticated user
+      (user: AuthDataResult?, error) in
+      if error != nil {
+        print(error!)
+        return
+      }
+      guard let uid = Auth.auth().currentUser?.uid else{ return }
+      /// ======== Successufully authenticated user
       
-        // creating a unique image name id otherwise all users will have the same profile image name in the Database
-        let imageName = UUID().uuidString
-        let storage = Storage.storage().reference().child("\(imageName).jpg")
-      
-        // if we can get the profile image choosen by the user we save it in the database. ( compressin image so the download is much faster)
-          //if let imageData = UIImagePNGRepresentation(self.profileImageView.image!)
-        if let profileImage = self.profileImageView.image, let imageData = UIImageJPEGRepresentation(profileImage, 0.1)
+      // creating a unique image name id otherwise all users will have the same profile image name in the Database
+      let imageName = UUID().uuidString
+      let storage = Storage.storage().reference().child("\(imageName).jpg")
+      // if we can get the profile image choosen by the user we save it in the database. ( compressin image so the download is much faster)
+      //if let imageData = UIImagePNGRepresentation(self.profileImageView.image!)
+      if let profileImage = self.profileImageView.image, let imageData = UIImageJPEGRepresentation(profileImage, 0.1)
+      {
+        storage.putData(imageData, metadata: nil, completion:
         {
-          storage.putData(imageData, metadata: nil, completion:
+          (metadata, error) in
+          if error != nil
           {
-            (metadata, error) in
-            if error != nil
-            {
+            print(error!)
+            return
+          }
+          // get the user profile image url
+          storage.downloadURL(completion:
+          {
+            (url, error) in
+            if error != nil {
               print(error!)
               return
             }
-            
-            // we get from the database the profile image url thus we can register it with the user credentials
-            storage.downloadURL(completion:
-              {
-                (url, error) in
-                if error != nil {
-                  print(error!)
-                  return
-                }
-                if let imageUrl = url?.absoluteString //optional bindig automatically unwrap the value
-                {
-                  let values = ["name": name, "email": email, "profileImageUrl": imageUrl]
-                  self.saveUserCredentialsWithUID(uid: uid, values: values)
-                }
-            })
-            
+            if let imageUrl = url?.absoluteString //optional bindig automatically unwrap the value
+            {
+              let values = ["name": name, "email": email, "profileImageUrl": imageUrl]
+              self.saveUserCredentialsWithUID(uid: uid, values: values)
+            }
           })
-        }
-        
-        
+        })
+      }
     })
   }
   
@@ -88,11 +82,6 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
       //we don't need for registration (like we do in login) to call again firebase (updateUserNavBarTitle) to update the title, because we already have access to values
 //        self.messagesController?.navigationItem.title = values["name"] as? String
       self.messagesController?.updateUserNavBarTitle()
-//      let user = User(dictionary: values)
-//      user.name = values["name"]
-//      user.email = values["email"]
-//      user.profileImageUrl = values["profileImageUrl"]
-      //user.setValuesForKeys(values) //this will crash if key and properties don't match
       self.dismiss(animated: true, completion: nil)
     })
   }
@@ -105,6 +94,7 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
     picker.allowsEditing = true
     present(picker, animated: true, completion: nil)
   }
+  
   
   func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : Any])
   {
@@ -121,11 +111,62 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
     dismiss(animated: true, completion: nil)
   }
   
+  
   func imagePickerControllerDidCancel(_ picker: UIImagePickerController)
   {
     dismiss(animated: true, completion: nil)
   }
   
   
+  @objc func handleLoginOrRegistration()
+  {
+    if loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0{
+      handleUserLogin()
+    }else{
+      handleUserRegistration()
+    }
+  }
+  
+  
+  func handleUserLogin()
+  {
+    guard let email = emailTextField.text, let password = passwordTextField.text else
+    {
+      print("Form is not valid")
+      return
+    }
+    Auth.auth().signIn(withEmail: email, password: password)
+    {
+      (user, error) in
+      if error != nil{
+        print(error!)
+        return
+      }
+      self.messagesController?.updateUserNavBarTitle()
+      self.dismiss(animated: true, completion: nil)
+    }
+  }
+  
+
+  
+  @objc func handleLoginRegistrationChangeTabs()
+  {
+    let title = loginOrRegistrationSegmentedControl.titleForSegment(at: loginOrRegistrationSegmentedControl.selectedSegmentIndex)
+    loginOrRegistrationButton.setTitle(title, for: .normal)
+    
+    // adapt the view height based on the SegmetedControl toggle
+    textFieldsContainerViewHeighAnchor?.constant = loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 100 : 150
+    // height of nameTextfield based on the SegmetedControl toggle
+    nameTextFieldHeighAnchor?.isActive = false
+    nameTextFieldHeighAnchor = nameTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 0 : 1/3)
+    nameTextFieldHeighAnchor?.isActive = true
+    //adapt the height of the email and password textField
+    emailTextFieldHeighAnchor?.isActive = false
+    emailTextFieldHeighAnchor = emailTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 1/2 : 1/3)
+    emailTextFieldHeighAnchor?.isActive = true
+    passwordTextFieldHeighAnchor?.isActive = false
+    passwordTextFieldHeighAnchor = passwordTextField.heightAnchor.constraint(equalTo: textFieldsContainerView.heightAnchor, multiplier: loginOrRegistrationSegmentedControl.selectedSegmentIndex == 0 ? 1/2 : 1/3)
+    passwordTextFieldHeighAnchor?.isActive = true
+  }
 
 }
