@@ -47,7 +47,7 @@ class LoginController: UIViewController, UITextFieldDelegate
   let loginOrRegistrationButton: UIButton =
   {
     let button = UIButton(type: UIButtonType.system)
-    button.backgroundColor = UIColor(r: 57, g: 68, b: 80)
+    button.backgroundColor = UIColor(r: 57, g: 68, b: 80) 
     button.setTitle("Registration", for: .normal)
     button.translatesAutoresizingMaskIntoConstraints = false
     button.setTitleColor(UIColor.white, for: .normal)
