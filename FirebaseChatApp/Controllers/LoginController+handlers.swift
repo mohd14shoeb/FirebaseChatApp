@@ -10,6 +10,12 @@ import UIKit
 import Firebase
 
 
+enum loginResult: String {
+  case missingFields = "Email or Password missing"
+  case loginError = "Email or Password incorrect"
+  case loginSuccess = "Login success"
+}
+
 extension LoginController: UIImagePickerControllerDelegate, UINavigationControllerDelegate, UIGestureRecognizerDelegate
 {
   
@@ -130,28 +136,44 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
   
   func handleUserLogin()
   {
-    
     guard let email = emailTextField.text, let password = passwordTextField.text, !email.isEmpty, !password.isEmpty else
     {
-      informUser("Email or Password missing")
+      informUser(loginResult.missingFields)
       return
     }
     Auth.auth().signIn(withEmail: email, password: password)
     {
       (user, error) in
       if error != nil{
-        self.informUser("Email or Password incorrect")
+        self.informUser(loginResult.loginError)
         return
       }
-      self.messagesController?.updateUserNavBarTitle()
-      self.dismiss(animated: true, completion: nil)
+      self.informUser(loginResult.loginSuccess)
     }
   }
   
-  private func informUser(_ msg: String)
+  private func informUser(_ result: loginResult)
   {
-    let userAlert = UIAlertController(title: "Operation Detail", message: msg, preferredStyle: .alert)
-    userAlert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+    let userAlert = UIAlertController(title: "Operation Detail", message: "", preferredStyle: .alert)
+    switch result
+    {
+      case .missingFields:
+        userAlert.message = loginResult.missingFields.rawValue
+        userAlert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+      case .loginError:
+        userAlert.message = loginResult.loginError.rawValue
+        userAlert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+      case .loginSuccess:
+        userAlert.message = loginResult.loginSuccess.rawValue
+        userAlert.addAction(UIAlertAction(title: "OK", style: .cancel, handler:
+        {
+          (alertAction) in
+          self.messagesController?.updateUserNavBarTitle()
+          self.dismiss(animated: true, completion: nil)
+        }))
+      default:
+        print("Some error occured")
+    }
     self.present(userAlert, animated: true, completion: nil)
   }
   
