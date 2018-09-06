@@ -130,21 +130,29 @@ extension LoginController: UIImagePickerControllerDelegate, UINavigationControll
   
   func handleUserLogin()
   {
-    guard let email = emailTextField.text, let password = passwordTextField.text else
+    
+    guard let email = emailTextField.text, let password = passwordTextField.text, !email.isEmpty, !password.isEmpty else
     {
-      print("Form is not valid")
+      informUser("Email or Password missing")
       return
     }
     Auth.auth().signIn(withEmail: email, password: password)
     {
       (user, error) in
       if error != nil{
-        print(error!)
+        self.informUser("Email or Password incorrect")
         return
       }
       self.messagesController?.updateUserNavBarTitle()
       self.dismiss(animated: true, completion: nil)
     }
+  }
+  
+  private func informUser(_ msg: String)
+  {
+    let userAlert = UIAlertController(title: "Operation Detail", message: msg, preferredStyle: .alert)
+    userAlert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
+    self.present(userAlert, animated: true, completion: nil)
   }
   
 
