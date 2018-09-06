@@ -266,7 +266,7 @@ class ChatController: UICollectionViewController, UITextFieldDelegate, UICollect
   {
     let size = CGSize(width: 200, height: 1000)
     let options = NSStringDrawingOptions.usesFontLeading.union(.usesLineFragmentOrigin)
-    return NSString(string: text).boundingRect(with: size, options: options, attributes: [NSAttributedStringKey.font: UIFont.systemFont(ofSize: 16)], context: nil)
+    return NSString(string: text).boundingRect(with: size, options: options, attributes: [ .font: UIFont.systemFont(ofSize: 16)], context: nil)
   }
   
   // This method is called everytime the device rotates and make possibile to re-render the layout when rotating

@@ -322,10 +322,10 @@ class RecentMessagesController: UITableViewController
   
   @objc func handleRecentMessages()
   {
-    let recentMessagesController = NewMessagesController()
+    let newMessagesController = NewMessagesController()
     //saving the MessageController in the RecentMessagesController thus later we can present the ChatController.
-    recentMessagesController.messagesController = self
-    let navigationController = UINavigationController(rootViewController: recentMessagesController)
+    newMessagesController.messagesController = self
+    let navigationController = UINavigationController(rootViewController: newMessagesController)
     present(navigationController, animated: true, completion: nil)
   }
 
